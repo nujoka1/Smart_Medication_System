@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MedSystem — Intelligent Dispensing</title>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b10;--bg2:#0d1117;--bg3:#111820;--bg4:#161f2a;
+  --border:#1a2332;--border2:#243040;
+  --text:#cdd9e5;--muted:#4a6278;--dim:#1e2d3d;
+  --green:#39d98a;--gd:#0d2e1e;--green2:#2bc97a;
+  --amber:#f5a623;--ad:#2d1f06;
+  --red:#f07070;--rd:#2d0e0e;
+  --blue:#58a6ff;--bd:#0d1f33;
+  --purple:#b48eff;--pd:#1a1033;
+  --cyan:#4dd0e1;--cd:#062228;
+  --mono:'DM Mono',monospace;--sans:'Inter',sans-serif;--disp:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* SHELL */
+.shell{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{font-family:var(--disp);font-size:18px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--green),#0e6640);display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono);letter-spacing:.06em}
+#dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+nav{padding:10px 8px;flex:1;overflow-y:auto}
+.nav-section{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:10px 10px 5px;font-family:var(--mono)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;margin-bottom:1px;transition:all .12s;user-select:none}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--dim);color:var(--green)}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--rd);color:var(--red);font-size:10px;font-family:var(--mono);padding:1px 6px;border-radius:10px}
+.sys-box{padding:12px 14px;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sys-row{display:flex;justify-content:space-between;margin-bottom:3px}
+.sys-v{color:var(--green)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:52px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;justify-content:space-between;background:var(--bg2)}
+.page-title{font-family:var(--disp);font-size:16px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:16px}
+#clock{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.content{flex:1;overflow-y:auto;padding:22px 24px}
+.panel{display:none}.panel.active{display:block}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;cursor:default}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.s-g::after{background:var(--green)}.s-a::after{background:var(--amber)}.s-r::after{background:var(--red)}.s-b::after{background:var(--blue)}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.stat-val{font-family:var(--disp);font-size:32px;font-weight:700;line-height:1}
+.s-g .stat-val{color:var(--green)}.s-a .stat-val{color:var(--amber)}.s-r .stat-val{color:var(--red)}.s-b .stat-val{color:var(--blue)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--mono)}
+
+/* SECTION HEADER */
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:6px}
+.sec-t{font-family:var(--disp);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+
+/* TODAY DOSES */
+.dose-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.dose-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:14px;transition:border-color .15s}
+.dose-card:hover{border-color:var(--border2)}
+.dose-time{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--green);background:var(--gd);border-radius:6px;padding:5px 10px;min-width:58px;text-align:center;flex-shrink:0}
+.dose-med{font-size:14px;font-weight:500;color:#fff}
+.dose-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.dose-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.comp-tag{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg3);padding:3px 8px;border-radius:4px}
+
+/* TABLE */
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.mono{font-family:var(--mono);font-size:12px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;font-family:var(--mono)}
+.badge.success{background:var(--gd);color:var(--green)}
+.badge.missed{background:var(--ad);color:var(--amber)}
+.badge.wrong_pill,.badge.error{background:var(--rd);color:var(--red)}
+.badge.custom_named{background:var(--pd);color:var(--purple)}
+.badge.custom{background:var(--bd);color:var(--blue);font-size:10px;padding:2px 6px}
+
+/* FORM */
+.form-wrap{max-width:560px}
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:14px}
+.form-title{font-family:var(--disp);font-size:14px;font-weight:700;color:#fff;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:9px 12px;font-size:13px;font-family:var(--sans);outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field select option{background:var(--bg3)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.hint{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--mono)}
+
+/* DRUG SEARCH */
+.drug-search-wrap{position:relative}
+#drug-search-input{padding-right:36px}
+.drug-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;display:none}
+.drug-result-item{padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.drug-result-item:last-child{border-bottom:none}
+.drug-result-item:hover{background:var(--dim);color:var(--green)}
+.drug-result-item.selected{background:var(--gd);color:var(--green)}
+.drug-class-tag{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.drug-selected-pill{display:inline-flex;align-items:center;gap:6px;background:var(--gd);border:1px solid var(--green);color:var(--green);padding:4px 10px;border-radius:6px;font-size:12px;font-family:var(--mono);margin-top:6px}
+.drug-selected-pill .x{cursor:pointer;opacity:.7;font-size:14px}
+.drug-selected-pill .x:hover{opacity:1}
+
+/* AM/PM TIME */
+.time-wrap{display:flex;gap:8px;align-items:center}
+.time-wrap input[type=number]{width:64px;text-align:center}
+.ampm-group{display:flex;border:1px solid var(--border2);border-radius:7px;overflow:hidden}
+.ampm-btn{padding:9px 14px;font-size:13px;font-family:var(--mono);cursor:pointer;background:var(--bg);color:var(--muted);border:none;transition:all .12s}
+.ampm-btn.on{background:var(--gd);color:var(--green)}
+.time-colon{font-family:var(--mono);font-size:18px;color:var(--muted);padding:0 2px}
+
+/* DAYS */
+.days-group{display:flex;gap:5px}
+.day-btn{padding:6px 11px;border-radius:6px;font-size:12px;font-family:var(--mono);cursor:pointer;border:1px solid var(--border2);background:var(--bg);color:var(--muted);transition:all .12s;user-select:none}
+.day-btn.on{background:var(--gd);color:var(--green);border-color:var(--green)}
+
+/* TONE SELECTOR */
+.tone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tone-card{background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .12s;display:flex;flex-direction:column;gap:4px}
+.tone-card:hover{border-color:var(--border);}
+.tone-card.selected{border-color:var(--green);background:var(--gd)}
+.tone-name{font-size:12px;font-weight:500;color:var(--text)}
+.tone-card.selected .tone-name{color:var(--green)}
+.tone-desc{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.tone-play{font-size:10px;color:var(--blue);margin-top:2px;cursor:pointer}
+.tone-play:hover{color:var(--cyan)}
+
+/* CUSTOM INFO */
+.info-box{background:var(--pd);border:1px solid #2d1f55;border-radius:8px;padding:11px 14px;font-size:12px;color:var(--purple);line-height:1.6;display:none;margin-bottom:14px}
+.info-box.show{display:block}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans)}
+.btn-green{background:var(--green);color:#050e0a}
+.btn-green:hover{background:var(--green2)}
+.btn-green:disabled{background:var(--gd);color:var(--muted);cursor:not-allowed}
+.btn-full{width:100%;margin-top:6px}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--border);color:var(--text)}
+.btn-del{background:transparent;border:1px solid var(--rd);color:var(--red);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--mono)}
+.btn-del:hover{background:var(--rd)}
+
+/* ADHERENCE */
+.adh-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
+.adh-cell{aspect-ratio:1;border-radius:4px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:var(--muted);cursor:default;transition:all .15s}
+.adh-cell.ok{background:var(--gd);border-color:var(--green);color:var(--green)}
+.adh-cell.miss{background:var(--ad);border-color:var(--amber);color:var(--amber)}
+.adh-cell.err{background:var(--rd);border-color:var(--red);color:var(--red)}
+.adh-cell.today{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+
+/* SETTINGS */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-info .setting-name{font-size:14px;font-weight:500;color:#fff}
+.setting-info .setting-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.toggle{width:42px;height:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;cursor:pointer;position:relative;transition:all .2s;flex-shrink:0}
+.toggle.on{background:var(--green);border-color:var(--green)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle.on::after{transform:translateX(18px)}
+.vol-slider{width:140px;accent-color:var(--green)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:9px;font-size:13px;font-weight:500;font-family:var(--mono);z-index:999;display:none;animation:tin .2s ease}
+.toast.ok{background:var(--gd);color:var(--green);border:1px solid var(--green)}
+.toast.err{background:var(--rd);color:var(--red);border:1px solid var(--red)}
+@keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.empty{padding:24px;text-align:center;color:var(--muted);font-size:13px;font-family:var(--mono)}
+
+/* REFILL BANNER */
+.refill-banner{background:var(--ad);border:1px solid var(--amber);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark"><div class="logo-icon">💊</div>MedSystem</div>
+    <div class="logo-sub"><span id="dot"></span>ONLINE · RPi 4B</div>
+  </div>
+  <nav>
+    <div class="nav-section">Monitoring</div>
+    <div class="nav-item active" data-panel="overview" onclick="nav(this)">
+      <span class="nav-icon">◈</span>Overview
+    </div>
+    <div class="nav-item" data-panel="adherence" onclick="nav(this)">
+      <span class="nav-icon">◫</span>Adherence
+    </div>
+    <div class="nav-item" data-panel="logs" onclick="nav(this)">
+      <span class="nav-icon">▤</span>Dispense Log
+    </div>
+    <div class="nav-section">Management</div>
+    <div class="nav-item" data-panel="alarm" onclick="nav(this)">
+      <span class="nav-icon">⏰</span>Set Alarm
+    </div>
+    <div class="nav-item" data-panel="schedule" onclick="nav(this)">
+      <span class="nav-icon">≡</span>Schedule
+    </div>
+    <div class="nav-item" data-panel="patients" onclick="nav(this)">
+      <span class="nav-icon">◉</span>Patients
+    </div>
+    <div class="nav-section">System</div>
+    <div class="nav-item" data-panel="settings" onclick="nav(this)">
+      <span class="nav-icon">⚙</span>Settings
+    </div>
+  </nav>
+  <div class="sys-box">
+    <div class="sys-row"><span>CPU</span><span class="sys-v" id="s-temp">—</span></div>
+    <div class="sys-row"><span>Uptime</span><span class="sys-v" id="s-uptime">—</span></div>
+    <div class="sys-row"><span>Patients</span><span class="sys-v" id="s-pat">—</span></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <span class="page-title" id="page-title">Overview</span>
+    <div class="topbar-right">
+      <span id="clock"></span>
+    </div>
+  </div>
+  <div class="content">
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div id="refill-banners"></div>
+    <div class="cards">
+      <div class="stat s-g"><div class="stat-lbl">Successful</div><div class="stat-val" id="c-ok">—</div><div class="stat-sub" id="c-rate">—</div></div>
+      <div class="stat s-a"><div class="stat-lbl">Missed</div><div class="stat-val" id="c-miss">—</div><div class="stat-sub">needs follow-up</div></div>
+      <div class="stat s-r"><div class="stat-lbl">Wrong pill</div><div class="stat-val" id="c-err">—</div><div class="stat-sub">AI alert</div></div>
+      <div class="stat s-b"><div class="stat-lbl">Total</div><div class="stat-val" id="c-total">—</div><div class="stat-sub">all time</div></div>
+    </div>
+    <div class="sec-h"><span class="sec-t">Today's doses</span></div>
+    <div class="dose-list" id="today-list"><div class="empty">Loading…</div></div>
+  </div>
+
+  <!-- SET ALARM -->
+  <div class="panel" id="panel-alarm">
+    <div class="form-wrap">
+      <div class="form-card">
+        <div class="form-title">New dispensing alarm</div>
+
+        <div class="field">
+          <label>Patient</label>
+          <select id="f-patient"></select>
+        </div>
+
+        <!-- AM/PM time -->
+        <div class="field">
+          <label>Alarm time</label>
+          <div class="time-wrap">
+            <input type="number" id="f-hour" value="8" min="1" max="12" style="width:64px;text-align:center">
+            <span class="time-colon">:</span>
+            <input type="number" id="f-min" value="00" min="0" max="59" style="width:64px;text-align:center">
+            <div class="ampm-group">
+              <button class="ampm-btn on" id="btn-am" onclick="setAmPm('AM')">AM</button>
+              <button class="ampm-btn" id="btn-pm" onclick="setAmPm('PM')">PM</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Quantity (pills)</label>
+            <input type="number" id="f-qty" value="1" min="1" max="20">
+          </div>
+          <div class="field">
+            <label>Compartment</label>
+            <select id="f-comp">
+              <option value="0">Comp 0 — Morning</option>
+              <option value="1">Comp 1 — Noon</option>
+              <option value="2">Comp 2 — Evening</option>
+              <option value="3">Comp 3 — Night</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Days of week</label>
+          <div class="days-group">
+            <span class="day-btn on" data-d="0">Mon</span>
+            <span class="day-btn on" data-d="1">Tue</span>
+            <span class="day-btn on" data-d="2">Wed</span>
+            <span class="day-btn on" data-d="3">Thu</span>
+            <span class="day-btn on" data-d="4">Fri</span>
+            <span class="day-btn on" data-d="5">Sat</span>
+            <span class="day-btn on" data-d="6">Sun</span>
+          </div>
+        </div>
+
+        <!-- Drug selector -->
+        <div class="field">
+          <label>Medication</label>
+          <div class="row2" style="margin-bottom:0">
+            <div>
+              <select id="f-drug-type" onchange="onDrugTypeChange()">
+                <option value="trained">Trained drug (AI model)</option>
+                <option value="custom">Custom drug (not in model)</option>
+              </select>
+            </div>
+            <div id="existing-med-col">
+              <select id="f-existing-med">
+                <option value="">— select existing —</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trained drug search -->
+        <div class="field" id="trained-drug-field">
+          <label>Search trained drug classes</label>
+          <div class="drug-search-wrap">
+            <input type="text" id="drug-search-input" placeholder="Type drug name… e.g. aspirin, metformin" autocomplete="off" oninput="drugSearch(this.value)">
+            <div class="drug-results" id="drug-results"></div>
+          </div>
+          <div id="drug-selected"></div>
+          <div class="hint">Matches the 112 classes trained in the AI model</div>
+        </div>
+
+        <!-- Custom drug -->
+        <div id="custom-drug-field" style="display:none">
+          <div class="info-box show">
+            ⚠ This drug is <strong>not in the AI model's trained classes.</strong>
+            The system will accept any pill dispensed and record it under
+            the custom name you enter. Ideal for medications added after training.
+          </div>
+          <div class="field">
+            <label>Custom drug name</label>
+            <input type="text" id="f-custom-name" placeholder="e.g. Lisinopril 10mg">
+          </div>
+          <div class="row2">
+            <div class="field"><label>Dose (mg)</label><input type="number" id="f-custom-mg" placeholder="10" min="0"></div>
+            <div class="field"><label>Stock count</label><input type="number" id="f-custom-stock" value="30"></div>
+          </div>
+        </div>
+
+        <!-- Alarm tone -->
+        <div class="field">
+          <label>Alarm tone</label>
+          <div class="tone-grid" id="tone-grid">
+            <div class="tone-card selected" data-tone="ding" onclick="selectTone(this)">
+              <div class="tone-name">Classic Ding</div>
+              <div class="tone-desc">Single soft chime</div>
+              <div class="tone-play" onclick="previewTone('ding',event)">▶ Preview</div>
+            </div>
+            <div class="tone-card" data-tone="double" onclick="selectTone(this)">
+              <div class="tone-name">Double Beep</div>
+              <div class="tone-desc">Two short pulses</div>
+              <div class="tone-play" onclick="previewTone('double',event)">▶ Preview</div>
+            </div>
+            <div class="tone-card" data-tone="chime" onclick="selectTone(this)">
+              <div class="tone-name">Chime Sequence</div>
+              <div class="tone-desc">Rising melody</div>
+              <div class="tone-play" onclick="previewTone('chime',event)">▶ Preview</div>
+            </div>
+            <div class="tone-card" data-tone="gentle" onclick="selectTone(this)">
+              <div class="tone-name">Gentle Pulse</div>
+              <div class="tone-desc">Soft repeating tone</div>
+              <div class="tone-play" onclick="previewTone('gentle',event)">▶ Preview</div>
+            </div>
+            <div class="tone-card" data-tone="urgent" onclick="selectTone(this)">
+              <div class="tone-name">Urgent Alert</div>
+              <div class="tone-desc">Rapid attention tone</div>
+              <div class="tone-play" onclick="previewTone('urgent',event)">▶ Preview</div>
+            </div>
+            <div class="tone-card" data-tone="hospital" onclick="selectTone(this)">
+              <div class="tone-name">Hospital Tone</div>
+              <div class="tone-desc">Clinical 3-note alert</div>
+              <div class="tone-play" onclick="previewTone('hospital',event)">▶ Preview</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Snooze (minutes)</label>
+          <select id="f-snooze">
+            <option value="0">No snooze</option>
+            <option value="5" selected>5 minutes</option>
+            <option value="10">10 minutes</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+          </select>
+        </div>
+
+        <button class="btn btn-green btn-full" id="save-btn" onclick="saveAlarm()">Save alarm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="panel" id="panel-schedule">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>Patient</th><th>Medication</th><th>Type</th><th>Compartment</th><th>Days</th><th>Qty</th><th>Tone</th><th></th></tr></thead>
+        <tbody id="sched-body"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LOGS -->
+  <div class="panel" id="panel-logs">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Timestamp</th><th>Patient</th><th>Expected</th><th>Detected / Used</th><th>Confidence</th><th>Result</th><th>Notes</th></tr></thead>
+        <tbody id="log-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADHERENCE -->
+  <div class="panel" id="panel-adherence">
+    <div class="sec-h"><span class="sec-t">28-day adherence calendar</span></div>
+    <div class="adh-grid" id="adh-days-head"></div>
+    <div class="adh-grid" id="adh-grid"></div>
+    <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;font-family:var(--mono)">
+      <span style="color:var(--green)">■ Taken</span>
+      <span style="color:var(--amber)">■ Missed</span>
+      <span style="color:var(--red)">■ Wrong pill</span>
+      <span style="color:var(--muted)">■ No dose</span>
+    </div>
+  </div>
+
+  <!-- PATIENTS -->
+  <div class="panel" id="panel-patients">
+    <div class="sec-h">
+      <span class="sec-t">Active patients</span>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="showAddPatient()">+ Add patient</button>
+    </div>
+    <div class="tbl-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th>Name</th><th>RFID UID</th><th>Schedules</th><th>Status</th></tr></thead>
+        <tbody id="patient-body"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div id="add-patient-form" style="display:none">
+      <div class="form-card" style="max-width:420px">
+        <div class="form-title">Add patient</div>
+        <div class="field"><label>Full name</label><input type="text" id="np-name" placeholder="Patient name"></div>
+        <div class="field"><label>RFID UID</label><input type="text" id="np-rfid" placeholder="Scan card or enter manually"></div>
+        <div class="row2">
+          <button class="btn btn-green" onclick="savePatient()">Save</button>
+          <button class="btn btn-ghost" onclick="hideAddPatient()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div class="form-card" style="max-width:520px">
+      <div class="form-title">Alarm &amp; sound settings</div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Default alarm tone</div><div class="setting-desc">Used for all new alarms unless overridden</div></div>
+        <select id="set-default-tone" style="width:160px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:7px 10px;font-size:13px">
+          <option value="ding">Classic Ding</option>
+          <option value="double">Double Beep</option>
+          <option value="chime">Chime Sequence</option>
+          <option value="gentle">Gentle Pulse</option>
+          <option value="urgent">Urgent Alert</option>
+          <option value="hospital">Hospital Tone</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Alert volume</div><div class="setting-desc">Speaker output level</div></div>
+        <input type="range" class="vol-slider" id="set-volume" min="0" max="100" value="80">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Test alarm tone</div><div class="setting-desc">Preview currently selected tone</div></div>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="previewTone(document.getElementById('set-default-tone').value,event)">▶ Play</button>
+      </div>
+    </div>
+    <div class="form-card" style="max-width:520px">
+      <div class="form-title">Notification settings</div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Missed dose alert</div><div class="setting-desc">Alert on dashboard when dose not confirmed</div></div>
+        <div class="toggle on" id="tog-missed" onclick="toggleSetting(this)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Low stock warning</div><div class="setting-desc">Banner when pills drop below 5</div></div>
+        <div class="toggle on" id="tog-lowstock" onclick="toggleSetting(this)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Wrong pill alert</div><div class="setting-desc">Red LED + urgent tone on AI mismatch</div></div>
+        <div class="toggle on" id="tog-wrongpill" onclick="toggleSetting(this)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Auto-snooze</div><div class="setting-desc">Repeat alarm if not confirmed in 5 minutes</div></div>
+        <div class="toggle" id="tog-snooze" onclick="toggleSetting(this)"></div>
+      </div>
+    </div>
+    <div class="form-card" style="max-width:520px">
+      <div class="form-title">System info</div>
+      <div class="setting-row"><div class="setting-info"><div class="setting-name">Device</div></div><span class="mono" style="color:var(--muted)">Raspberry Pi 4B</span></div>
+      <div class="setting-row"><div class="setting-info"><div class="setting-name">AI model</div></div><span class="mono" style="color:var(--muted)">YOLOv8n ONNX · 112 classes</span></div>
+      <div class="setting-row"><div class="setting-info"><div class="setting-name">Firmware</div></div><span class="mono" style="color:var(--muted)">MedSystem v1.0</span></div>
+      <div class="setting-row"><div class="setting-info"><div class="setting-name">CPU temp</div></div><span class="mono sys-v" id="set-temp">—</span></div>
+    </div>
+  </div>
+
+  </div><!-- content -->
+</div><!-- main -->
+</div><!-- shell -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── All trained drug classes ──────────────────────────────
+const DRUG_CLASSES = ["acc_long_600_mg","advil_ultra_forte","algoflex_forte_dolo_400_mg","algoflex_duo_400_mg","algoflex_rapid_400_mg","amlodipine_teva_5_mg","amlodipine_teva_10_mg","amoxicillin_500_mg","aspirin_ultra_500_mg","aspirin_protect_100_mg","atorvastatin_teva_10_mg","atorvastatin_teva_20_mg","atorvastatin_teva_40_mg","azithromycin_250_mg","azithromycin_500_mg","betaloc_25_mg","betaloc_50_mg","betaloc_zok_25_mg","betaloc_zok_50_mg","bisoprolol_teva_2_5_mg","bisoprolol_teva_5_mg","bisoprolol_teva_10_mg","calcium_vitamin_d3","captopril_25_mg","captopril_50_mg","carvedilol_6_25_mg","carvedilol_12_5_mg","carvedilol_25_mg","cetirizine_10_mg","ciprofloxacin_250_mg","ciprofloxacin_500_mg","clopidogrel_75_mg","concor_2_5_mg","concor_5_mg","concor_10_mg","co_diovan_160_12_5","co_diovan_160_25","dexamethasone_4_mg","diazepam_5_mg","diclofenac_sodium_50_mg","digoxin_0_25_mg","diovan_80_mg","diovan_160_mg","diovan_320_mg","dolo_neurobion_forte","doxycycline_100_mg","dulodet_30_mg","dulodet_60_mg","dulsevia_30_mg","dulsevia_60_mg","enalapril_5_mg","enalapril_10_mg","enalapril_20_mg","escitalopram_10_mg","esomeprazole_20_mg","esomeprazole_40_mg","fluconazole_150_mg","furosemide_40_mg","gabapentin_300_mg","gabapentin_400_mg","glucophage_500_mg","glucophage_850_mg","glucophage_1000_mg","glucophage_xr_500_mg","glucovance_500_mg","ibumax_200_mg","ibumax_400_mg","ibumax_600_mg","januvia_100_mg","ketoprofen_100_mg","lanzor_15_mg","lanzor_30_mg","lasix_40_mg","lisinopril_5_mg","lisinopril_10_mg","lisinopril_20_mg","losartan_25_mg","losartan_50_mg","losartan_100_mg","magne_b6","magne_b6_forte","metformin_500_mg","metformin_1000_mg","metoprolol_25_mg","metoprolol_50_mg","metoprolol_100_mg","metronidazole_250_mg","metronidazole_500_mg","nolpaza_20_mg","nolpaza_40_mg","norvasc_5_mg","norvasc_10_mg","omeprazole_20_mg","omeprazole_40_mg","paracetamol_500_mg","paracetamol_1000_mg","perindopril_4_mg","perindopril_8_mg","prednisolone_5_mg","prednisolone_25_mg","ramipril_2_5_mg","ramipril_5_mg","ramipril_10_mg","rosuvastatin_10_mg","rosuvastatin_20_mg","rosuvastatin_40_mg","sertraline_50_mg","sertraline_100_mg","simvastatin_20_mg","simvastatin_40_mg","spironolactone_25_mg","tamsulosin_0_4_mg","tramadol_50_mg","valsartan_80_mg","valsartan_160_mg","vitamin_d3_1000_iu","vitamin_d3_5000_iu","warfarin_5_mg","zocor_20_mg"];
+
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const PAGE={'overview':'Overview','alarm':'Set Alarm','schedule':'Schedule','logs':'Dispense Log','adherence':'Adherence','patients':'Patients','settings':'Settings'};
+
+const socket = io();
+socket.on('new_log',()=>{loadSummary();loadLogs();loadToday();});
+socket.on('schedule_updated',()=>{loadSchedules();loadToday();loadExistingMeds();});
+
+// ── Clock ──────────────────────────────────────────────────
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    n.toLocaleTimeString('en-GB',{hour12:false})+' · '+
+    n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+},1000);
+
+// ── Navigation ─────────────────────────────────────────────
+function nav(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const name=el.dataset.panel;
+  document.getElementById('panel-'+name).classList.add('active');
+  document.getElementById('page-title').textContent=PAGE[name];
+  if(name==='alarm')    {loadPatientsSel();loadExistingMeds();}
+  if(name==='schedule') loadSchedules();
+  if(name==='logs')     loadLogs();
+  if(name==='adherence')buildAdherence();
+  if(name==='patients') loadPatients();
+  if(name==='settings') loadSettingsStatus();
+}
+
+// ── AM/PM ─────────────────────────────────────────────────
+let ampm='AM';
+function setAmPm(v){
+  ampm=v;
+  document.getElementById('btn-am').className='ampm-btn'+(v==='AM'?' on':'');
+  document.getElementById('btn-pm').className='ampm-btn'+(v==='PM'?' on':'');
+}
+function get24hTime(){
+  let h=parseInt(document.getElementById('f-hour').value)||12;
+  const m=String(document.getElementById('f-min').value||'0').padStart(2,'0');
+  if(ampm==='AM'){if(h===12)h=0;}
+  else{if(h!==12)h+=12;}
+  return String(h).padStart(2,'0')+':'+m;
+}
+function formatTime12(t24){
+  const[h,m]=t24.split(':').map(Number);
+  const ap=h<12?'AM':'PM';
+  const h12=h%12||12;
+  return h12+':'+String(m).padStart(2,'0')+' '+ap;
+}
+
+// ── Day toggles ────────────────────────────────────────────
+document.querySelectorAll('.day-btn').forEach(b=>b.addEventListener('click',()=>b.classList.toggle('on')));
+const selDays=()=>[...document.querySelectorAll('.day-btn.on')].map(b=>b.dataset.d).join('');
+
+// ── Tone ──────────────────────────────────────────────────
+let selectedTone='ding';
+function selectTone(el){
+  document.querySelectorAll('.tone-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTone=el.dataset.tone;
+}
+
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+function previewTone(tone,ev){
+  if(ev){ev.stopPropagation();}
+  const ctx=new AudioCtx();
+  const vol=parseInt(document.getElementById('set-volume')?document.getElementById('set-volume').value:80)/100;
+  const g=ctx.createGain();g.connect(ctx.destination);
+  const play=(freq,start,dur,type='sine')=>{
+    const o=ctx.createOscillator();o.type=type;o.frequency.value=freq;
+    const env=ctx.createGain();env.gain.setValueAtTime(0,start);
+    env.gain.linearRampToValueAtTime(vol*0.4,start+0.01);
+    env.gain.exponentialRampToValueAtTime(0.001,start+dur);
+    o.connect(env);env.connect(g);o.start(start);o.stop(start+dur);
+  };
+  const t=ctx.currentTime;
+  if(tone==='ding')     {play(880,t,0.6);}
+  else if(tone==='double'){play(660,t,0.15);play(880,t+0.2,0.15);}
+  else if(tone==='chime'){[523,659,784,1047].forEach((f,i)=>play(f,t+i*0.18,0.4));}
+  else if(tone==='gentle'){[0,0.5,1,1.5,2].forEach(d=>play(440,t+d,0.3));}
+  else if(tone==='urgent'){[0,.1,.2,.3,.4,.5,.6,.7].forEach(d=>play(d%0.2<0.1?880:660,t+d,0.08,'square'));}
+  else if(tone==='hospital'){play(523,t,0.3);play(659,t+0.35,0.3);play(784,t+0.7,0.5);}
+}
+
+// ── Drug type toggle ───────────────────────────────────────
+function onDrugTypeChange(){
+  const v=document.getElementById('f-drug-type').value;
+  document.getElementById('trained-drug-field').style.display=v==='trained'?'block':'none';
+  document.getElementById('custom-drug-field').style.display=v==='custom'?'block':'none';
+  document.getElementById('existing-med-col').style.display=v==='trained'?'none':'block';
+}
+
+// ── Drug search ────────────────────────────────────────────
+let selectedDrugClass=null;
+function drugSearch(q){
+  const box=document.getElementById('drug-results');
+  if(!q.trim()){box.style.display='none';return;}
+  const hits=DRUG_CLASSES.filter(d=>d.includes(q.toLowerCase().replace(/\s+/g,'_'))||
+    d.replace(/_/g,' ').includes(q.toLowerCase())).slice(0,8);
+  if(!hits.length){box.style.display='none';return;}
+  box.innerHTML=hits.map(d=>`
+    <div class="drug-result-item" onclick="selectDrug('${d}')">
+      <span>${d.replace(/_/g,' ')}</span>
+      <span class="drug-class-tag">${d}</span>
+    </div>`).join('');
+  box.style.display='block';
+}
+function selectDrug(cls){
+  selectedDrugClass=cls;
+  document.getElementById('drug-search-input').value='';
+  document.getElementById('drug-results').style.display='none';
+  document.getElementById('drug-selected').innerHTML=
+    `<div class="drug-selected-pill">
+       <span>${cls.replace(/_/g,' ')}</span>
+       <span class="x" onclick="clearDrug()">✕</span>
+     </div>`;
+}
+function clearDrug(){selectedDrugClass=null;document.getElementById('drug-selected').innerHTML='';}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.drug-search-wrap'))
+    document.getElementById('drug-results').style.display='none';
+});
+
+// ── Load helpers ───────────────────────────────────────────
+const api=url=>fetch(url).then(r=>r.json());
+
+async function loadPatientsSel(){
+  const rows=await api('/api/patients');
+  document.getElementById('f-patient').innerHTML=
+    rows.length?rows.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')
+              :'<option value="">No patients</option>';
+}
+
+async function loadExistingMeds(){
+  const rows=await api('/api/medications');
+  document.getElementById('f-existing-med').innerHTML=
+    '<option value="">— select existing med —</option>'+
+    rows.map(m=>`<option value="${m.id}">${m.name}${m.custom?' (custom)':''}</option>`).join('');
+}
+
+async function loadSummary(){
+  const d=await api('/api/summary');
+  document.getElementById('c-ok').textContent=d.success;
+  document.getElementById('c-miss').textContent=d.missed;
+  document.getElementById('c-err').textContent=d.errors;
+  document.getElementById('c-total').textContent=d.total;
+  document.getElementById('c-rate').textContent=d.success_rate+'% success rate';
+  document.getElementById('s-pat').textContent=d.active_patients;
+}
+
+async function loadToday(){
+  const rows=await api('/api/schedule/today');
+  const el=document.getElementById('today-list');
+  if(!rows.length){el.innerHTML='<div class="empty">No doses scheduled today</div>';return;}
+  el.innerHTML=rows.map(r=>`
+    <div class="dose-card">
+      <div class="dose-time">${formatTime12(r.time)}</div>
+      <div style="flex:1">
+        <div class="dose-med">${r.med}${r.custom_name?` <span class="badge custom">custom</span>`:''} ×${r.qty}</div>
+        <div class="dose-sub">${r.patient}</div>
+      </div>
+      <div class="dose-right"><span class="comp-tag">Comp ${r.compartment}</span></div>
+    </div>`).join('');
+  // Refill banners
+  loadRefillBanners();
+}
+
+async function loadRefillBanners(){
+  const meds=await api('/api/medications');
+  const banners=meds.filter(m=>m.stock<=5&&m.stock>0);
+  document.getElementById('refill-banners').innerHTML=
+    banners.map(m=>`<div class="refill-banner">⚠ Low stock: <strong>${m.name}</strong> — ${m.stock} pills remaining. Please refill compartment.</div>`).join('');
+}
+
+async function loadSchedules(){
+  const rows=await api('/api/schedules');
+  const tb=document.getElementById('sched-body');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="9" class="empty">No alarms set</td></tr>';return;}
+  tb.innerHTML=rows.map(r=>`
+    <tr>
+      <td class="mono" style="color:var(--green)">${formatTime12(r.time)}</td>
+      <td>${r.patient}</td><td>${r.med}</td>
+      <td><span class="badge ${r.custom?'custom_named':'success'}">${r.custom?'custom':'AI trained'}</span></td>
+      <td class="mono">Comp ${r.comp}</td>
+      <td style="font-size:12px;color:var(--muted)">${[...r.days].map(d=>DAYS[+d]).join(', ')}</td>
+      <td class="mono">${r.qty}</td>
+      <td class="mono" style="color:var(--muted)">${r.tone||'ding'}</td>
+      <td><button class="btn-del" onclick="delSchedule(${r.id})">Delete</button></td>
+    </tr>`).join('');
+}
+
+async function loadLogs(){
+  const rows=await api('/api/logs?limit=30');
+  const tb=document.getElementById('log-body');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="7" class="empty">No events yet</td></tr>';return;}
+  tb.innerHTML=rows.map(r=>`
+    <tr>
+      <td class="mono" style="font-size:12px;color:var(--muted)">${r.timestamp}</td>
+      <td>${r.patient}</td><td>${r.expected_med}</td>
+      <td style="color:var(--muted)">${r.detected_med}</td>
+      <td class="mono">${r.confidence!==null?r.confidence+'%':'—'}</td>
+      <td><span class="badge ${r.outcome}">${r.outcome.replace('_',' ')}</span></td>
+      <td style="font-size:11px;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.notes}</td>
+    </tr>`).join('');
+}
+
+async function loadPatients(){
+  const rows=await api('/api/patients');
+  const tb=document.getElementById('patient-body');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="4" class="empty">No patients</td></tr>';return;}
+  tb.innerHTML=rows.map(p=>`
+    <tr>
+      <td style="font-weight:500;color:#fff">${p.name}</td>
+      <td class="mono" style="color:var(--muted)">${p.rfid}</td>
+      <td class="mono">${p.schedules.length}</td>
+      <td><span class="badge success">active</span></td>
+    </tr>`).join('');
+}
+
+function buildAdherence(){
+  const head=document.getElementById('adh-days-head');
+  const grid=document.getElementById('adh-grid');
+  head.innerHTML=DAYS.map(d=>`<div style="text-align:center;font-size:10px;color:var(--muted);font-family:var(--mono);padding:4px 0">${d}</div>`).join('');
+  // Build 28 days back from today (placeholder — will be populated from logs)
+  const cells=[];
+  const today=new Date();
+  for(let i=27;i>=0;i--){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const isToday=i===0;
+    cells.push(`<div class="adh-cell${isToday?' today':''}" title="${d.toLocaleDateString()}">${d.getDate()}</div>`);
+  }
+  grid.innerHTML=cells.join('');
+}
+
+function loadSettingsStatus(){
+  api('/api/status').then(d=>{
+    document.getElementById('set-temp').textContent=d.cpu_temp;
+  });
+}
+
+async function loadStatus(){
+  const d=await api('/api/status');
+  document.getElementById('s-temp').textContent=d.cpu_temp;
+  const up=Math.floor(parseFloat(d.uptime)/3600);
+  document.getElementById('s-uptime').textContent=up+'h';
+}
+
+// ── Save alarm ─────────────────────────────────────────────
+async function saveAlarm(){
+  const btn=document.getElementById('save-btn');
+  const drugType=document.getElementById('f-drug-type').value;
+  const days=selDays();
+
+  if(!days){toast('Select at least one day',true);return;}
+  if(!document.getElementById('f-patient').value){toast('Select a patient',true);return;}
+  if(drugType==='trained'&&!selectedDrugClass){toast('Search and select a drug class',true);return;}
+  if(drugType==='custom'&&!document.getElementById('f-custom-name').value.trim()){toast('Enter a custom drug name',true);return;}
+
+  const body={
+    patient_id:+document.getElementById('f-patient').value,
+    dose_time:get24hTime(),
+    dose_quantity:+document.getElementById('f-qty').value,
+    compartment:+document.getElementById('f-comp').value,
+    days_of_week:days,
+    tone:selectedTone,
+    snooze_min:+document.getElementById('f-snooze').value
+  };
+
+  const existingId=document.getElementById('f-existing-med').value;
+  if(drugType==='trained'){
+    // Find or create medication with this ai_class_name
+    body.ai_class_name=selectedDrugClass;
+    body.drug_name=selectedDrugClass.replace(/_/g,' ');
+  } else if(existingId){
+    body.medication_id=+existingId;
+  } else {
+    body.drug_name=document.getElementById('f-custom-name').value.trim();
+    body.dose_mg=+document.getElementById('f-custom-mg').value||0;
+    body.stock_count=+document.getElementById('f-custom-stock').value||30;
+  }
+
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const d=await fetch('/api/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+    if(d.success){
+      toast(`Alarm saved: ${d.medication} at ${formatTime12(d.time)}${d.is_custom?' (custom)':''}`);
+      previewTone(selectedTone,null);
+      clearDrug();
+      loadToday();
+    }else{toast(d.error||'Save failed',true);}
+  }catch{toast('Network error',true);}
+  finally{btn.disabled=false;btn.textContent='Save alarm';}
+}
+
+async function delSchedule(id){
+  if(!confirm('Delete this alarm?'))return;
+  const d=await fetch('/api/schedule/'+id,{method:'DELETE'}).then(r=>r.json());
+  if(d.success){toast('Alarm deleted');loadSchedules();}
+}
+
+function showAddPatient(){document.getElementById('add-patient-form').style.display='block';}
+function hideAddPatient(){document.getElementById('add-patient-form').style.display='none';}
+async function savePatient(){
+  const name=document.getElementById('np-name').value.trim();
+  const rfid=document.getElementById('np-rfid').value.trim();
+  if(!name||!rfid){toast('Name and RFID required',true);return;}
+  const d=await fetch('/api/patient',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,rfid_uid:rfid})}).then(r=>r.json());
+  if(d.success){toast('Patient added');hideAddPatient();loadPatients();}
+  else toast(d.error||'Failed',true);
+}
+
+function toggleSetting(el){el.classList.toggle('on');}
+
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+(err?'err':'ok');
+  t.style.display='block';setTimeout(()=>t.style.display='none',3500);
+}
+
+// ── Boot ───────────────────────────────────────────────────
+loadSummary();loadToday();loadStatus();
+onDrugTypeChange();
+setInterval(loadSummary,30000);setInterval(loadToday,30000);setInterval(loadStatus,10000);
+</script>
+</body>
+</html>

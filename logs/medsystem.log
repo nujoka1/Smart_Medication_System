@@ -1,0 +1,49 @@
+2026-05-05 13:36:11,787 [INFO] main: === MedSystem Starting ===
+2026-05-05 13:36:11,956 [WARNING] src.hardware.servo: pigpio unavailable (pigpio daemon not running) — servo in simulation mode
+2026-05-05 13:36:13,048 [WARNING] src.hardware.camera: Camera unavailable (list index out of range) — in simulation mode
+2026-05-05 13:36:13,050 [WARNING] src.ai.detector: Model not found at models/best.onnx — AI in simulation mode
+2026-05-05 13:36:13,050 [INFO] main: ✓ All systems initialised
+2026-05-05 13:36:13,050 [INFO] main: System running. Press Ctrl+C to stop.
+2026-05-05 13:36:22,429 [INFO] main: Shutdown requested
+2026-05-05 13:36:22,434 [INFO] main: === MedSystem Stopped ===
+2026-05-05 14:22:07,678 [INFO] main: === MedSystem Starting ===
+2026-05-05 14:22:07,910 [INFO] src.hardware.servo: ✓ Servo ready via pigpio
+2026-05-05 14:22:08,382 [WARNING] src.hardware.camera: Camera unavailable (list index out of range) — in simulation mode
+2026-05-05 14:22:08,384 [WARNING] src.ai.detector: Model not found: models/best.onnx — simulation mode
+2026-05-05 14:22:08,384 [INFO] main: ✓ All systems initialised
+2026-05-05 14:22:08,385 [INFO] main: System running. Press Ctrl+C to stop.
+2026-05-05 14:35:49,475 [INFO] main: === MedSystem Starting ===
+2026-05-05 14:35:49,692 [INFO] src.hardware.servo: ✓ Servo ready via pigpio
+2026-05-05 14:35:50,015 [WARNING] src.hardware.camera: Camera unavailable (list index out of range) — in simulation mode
+2026-05-05 14:35:50,017 [WARNING] src.ai.detector: Model not found: models/best.onnx — simulation mode
+2026-05-05 14:35:50,018 [INFO] main: ✓ All systems initialised
+2026-05-05 14:35:50,018 [INFO] main: System running. Press Ctrl+C to stop.
+2026-05-05 14:54:37,783 [INFO] main: Shutdown requested
+2026-05-05 14:54:37,785 [INFO] main: === MedSystem Stopped ===
+2026-05-05 14:02:32,988 [INFO] main: === MedSystem Starting ===
+2026-05-05 14:02:33,204 [INFO] src.hardware.servo: ✓ Servo ready via pigpio
+2026-05-05 14:02:33,205 [INFO] src.hardware.ir_sensors: IR sensors initialised on pins: [5, 6, 13, 27, 22, 4]
+2026-05-05 14:02:34,011 [WARNING] src.hardware.camera: Camera unavailable (list index out of range) — in simulation mode
+2026-05-05 14:02:34,391 [INFO] src.ai.detector: TFLite loaded: models/best.tflite imgsz=640
+2026-05-05 14:02:34,392 [INFO] main: ✓ All systems initialised
+2026-05-05 14:02:34,392 [INFO] main: System running. Press Ctrl+C to stop.
+2026-05-05 14:06:22,118 [INFO] main: === MedSystem Starting ===
+2026-05-05 14:06:22,327 [INFO] src.hardware.servo: 6 servos ready via pigpio on pins: [18, 12, 13, 19, 6, 26]
+2026-05-05 14:06:22,327 [INFO] src.hardware.ir_sensors: IR sensors initialised on pins: [5, 6, 13, 27, 22, 4]
+2026-05-05 14:06:22,793 [WARNING] src.hardware.camera: Camera unavailable (list index out of range) — in simulation mode
+2026-05-05 14:06:23,426 [INFO] src.ai.detector: TFLite loaded: models/best.tflite imgsz=640
+2026-05-05 14:06:23,427 [INFO] main: ✓ All systems initialised
+2026-05-05 14:06:23,427 [INFO] main: System running. Press Ctrl+C to stop.
+2026-05-05 14:06:38,947 [INFO] main: Shutdown requested
+2026-05-05 14:06:38,951 [INFO] src.hardware.servo: All servos stopped
+2026-05-05 14:06:38,952 [INFO] main: === MedSystem Stopped ===
+2026-05-05 14:09:08,240 [INFO] main: === MedSystem Starting ===
+2026-05-05 14:09:08,426 [INFO] src.hardware.servo: 6 servos ready via pigpio on pins: [18, 12, 13, 19, 6, 26]
+2026-05-05 14:09:08,427 [INFO] src.hardware.ir_sensors: IR sensors initialised on pins: [5, 6, 13, 27, 22, 4]
+2026-05-05 14:09:08,683 [WARNING] src.hardware.camera: Camera unavailable (list index out of range) — in simulation mode
+2026-05-05 14:09:08,851 [INFO] src.ai.detector: TFLite loaded: models/best.tflite imgsz=640
+2026-05-05 14:09:08,852 [INFO] main: ✓ All systems initialised
+2026-05-05 14:09:08,852 [INFO] main: System running. Press Ctrl+C to stop.
+2026-05-05 14:12:58,476 [INFO] main: Shutdown requested
+2026-05-05 14:12:58,479 [INFO] src.hardware.servo: All servos stopped
+2026-05-05 14:12:58,480 [INFO] main: === MedSystem Stopped ===
