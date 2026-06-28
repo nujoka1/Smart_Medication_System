@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MedSystem TFT</title>
+<meta name="viewport" content="width=480, height=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 480px;
+    height: 320px;
+    overflow: hidden;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #07111f;
+    color: #ffffff;
+    cursor: none;
+}
+
+.screen {
+    display: none;
+    width: 480px;
+    height: 320px;
+    padding: 10px;
+}
+
+.screen.active {
+    display: block;
+}
+
+.header {
+    height: 38px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1f344d;
+    margin-bottom: 8px;
+}
+
+.brand {
+    font-size: 20px;
+    font-weight: 800;
+    color: #55c7ff;
+    letter-spacing: 1px;
+}
+
+.time {
+    font-size: 16px;
+    color: #c7d4e5;
+}
+
+.card {
+    background: #101d30;
+    border: 1px solid #223b59;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.label {
+    font-size: 13px;
+    color: #8fa8c4;
+    margin-bottom: 4px;
+}
+
+.main-text {
+    font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.15;
+}
+
+.sub-text {
+    font-size: 17px;
+    color: #d5e4f5;
+    margin-top: 5px;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+}
+
+.stat {
+    flex: 1;
+    background: #0b1728;
+    border: 1px solid #1f344d;
+    border-radius: 12px;
+    padding: 9px;
+    min-height: 58px;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #8fa8c4;
+}
+
+.actions {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    border: 0;
+    border-radius: 14px;
+    height: 58px;
+    font-size: 19px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.btn-primary {
+    flex: 2;
+    background: #0b8f5a;
+}
+
+.btn-secondary {
+    flex: 1;
+    background: #1f344d;
+}
+
+.btn-warning {
+    flex: 1;
+    background: #bd7b00;
+}
+
+.btn-danger {
+    flex: 1;
+    background: #b3261e;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    background: #1bd97c;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.big-center {
+    height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.progress-count {
+    font-size: 64px;
+    font-weight: 900;
+    color: #55c7ff;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.menu-btn {
+    height: 72px;
+    background: #10243a;
+    border: 1px solid #294b70;
+    font-size: 17px;
+}
+
+.small-note {
+    font-size: 13px;
+    color: #9fb6cd;
+    margin-top: 4px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen active">
+    <div class="header">
+        <div class="brand">MEDSYSTEM</div>
+        <div class="time" id="clock">--:--</div>
+    </div>
+
+    <div class="card">
+        <div class="label">NEXT DOSE</div>
+        <div class="main-text" id="nextMed">Loading...</div>
+        <div class="sub-text" id="nextInfo">Checking schedule</div>
+    </div>
+
+    <div class="row">
+        <div class="stat">
+            <div class="stat-value" id="stockCount">--</div>
+            <div class="stat-label">Stock Left</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="doseQty">--</div>
+            <div class="stat-label">Dose Qty</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value"><span class="status-dot"></span>OK</div>
+            <div class="stat-label">System</div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-primary" onclick="showScreen('due')">Dispense</button>
+        <button class="btn-secondary" onclick="showScreen('menu')">Menu</button>
+    </div>
+</div>
+
+<!-- DUE SCREEN -->
+<div id="due" class="screen">
+    <div class="header">
+        <div class="brand">DOSE DUE</div>
+        <div class="time" id="clock2">--:--</div>
+    </div>
+
+    <div class="card">
+        <div class="label">PATIENT</div>
+        <div class="main-text" id="duePatient">Demo Patient</div>
+        <div class="sub-text" id="dueMed">Medication loading...</div>
+    </div>
+
+    <div class="card">
+        <div class="sub-text" id="dueDetails">Dose: -- pills | Stock: --</div>
+        <div class="small-note">Confirm before dispensing.</div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-primary" onclick="simulateDispense()">DISPENSE</button>
+        <button class="btn-warning" onclick="showScreen('home')">SKIP</button>
+    </div>
+</div>
+
+<!-- DISPENSING SCREEN -->
+<div id="dispensing" class="screen">
+    <div class="header">
+        <div class="brand">DISPENSING</div>
+        <div class="time" id="clock3">--:--</div>
+    </div>
+
+    <div class="big-center">
+        <div>
+            <div class="label">PILLS PASSED</div>
+            <div class="progress-count" id="pillProgress">0 / 2</div>
+            <div class="sub-text">Please wait...</div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-danger" onclick="showError('Dispense stopped by user')">STOP</button>
+    </div>
+</div>
+
+<!-- VERIFY SCREEN -->
+<div id="verify" class="screen">
+    <div class="header">
+        <div class="brand">VERIFYING</div>
+        <div class="time" id="clock4">--:--</div>
+    </div>
+
+    <div class="big-center">
+        <div>
+            <div class="main-text">Checking Pill</div>
+            <div class="sub-text">Camera capture + AI verification</div>
+            <div class="small-note">Hardware connection comes next.</div>
+        </div>
+    </div>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div id="success" class="screen">
+    <div class="header">
+        <div class="brand">COMPLETE</div>
+        <div class="time" id="clock5">--:--</div>
+    </div>
+
+    <div class="big-center">
+        <div>
+            <div class="main-text" style="color:#1bd97c;">Dose Complete</div>
+            <div class="sub-text">Pills dispensed and logged</div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-primary" onclick="showScreen('home')">OK</button>
+    </div>
+</div>
+
+<!-- ERROR SCREEN -->
+<div id="error" class="screen">
+    <div class="header">
+        <div class="brand" style="color:#ff6b6b;">ERROR</div>
+        <div class="time" id="clock6">--:--</div>
+    </div>
+
+    <div class="big-center">
+        <div>
+            <div class="main-text" id="errorText" style="color:#ff6b6b;">Dispense Error</div>
+            <div class="sub-text">Check the compartment and retry.</div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-primary" onclick="showScreen('due')">Retry</button>
+        <button class="btn-secondary" onclick="showScreen('home')">Cancel</button>
+    </div>
+</div>
+
+<!-- MENU SCREEN -->
+<div id="menu" class="screen">
+    <div class="header">
+        <div class="brand">MENU</div>
+        <div class="time" id="clock7">--:--</div>
+    </div>
+
+    <div class="menu-grid">
+        <button class="menu-btn" onclick="alertBox('Schedule view coming next')">Today Schedule</button>
+        <button class="menu-btn" onclick="alertBox('Stock view coming next')">Medication Stock</button>
+        <button class="menu-btn" onclick="alertBox('Manual dispense coming after hardware layer')">Manual Dispense</button>
+        <button class="menu-btn" onclick="alertBox('Settings coming next')">Settings</button>
+    </div>
+
+    <div class="actions">
+        <button class="btn-secondary" onclick="showScreen('home')">Back</button>
+    </div>
+</div>
+
+<script>
+let currentDose = {
+    patient: "Demo Patient",
+    med: "No schedule",
+    time: "--:--",
+    qty: 0,
+    stock: "--"
+};
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function updateClock() {
+    const now = new Date();
+    const t = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.querySelectorAll('.time').forEach(el => el.textContent = t);
+}
+
+async function loadData() {
+    try {
+        const scheduleRes = await fetch('/api/schedule/today');
+        const medsRes = await fetch('/api/medications');
+
+        const schedule = await scheduleRes.json();
+        const meds = await medsRes.json();
+
+        if (schedule.length > 0) {
+            const next = schedule[0];
+            const medInfo = meds.find(m => m.name === next.med) || {};
+
+            currentDose = {
+                patient: next.patient || "Demo Patient",
+                med: next.med || "Medication",
+                time: next.time || "--:--",
+                qty: next.qty || 1,
+                stock: medInfo.stock ?? "--"
+            };
+
+            document.getElementById('nextMed').textContent = currentDose.med;
+            document.getElementById('nextInfo').textContent =
+                `${currentDose.time} | ${currentDose.patient}`;
+
+            document.getElementById('stockCount').textContent = currentDose.stock;
+            document.getElementById('doseQty').textContent = currentDose.qty;
+
+            document.getElementById('duePatient').textContent = currentDose.patient;
+            document.getElementById('dueMed').textContent = currentDose.med;
+            document.getElementById('dueDetails').textContent =
+                `Dose: ${currentDose.qty} pill(s) | Stock: ${currentDose.stock}`;
+        } else {
+            document.getElementById('nextMed').textContent = "No dose scheduled";
+            document.getElementById('nextInfo').textContent = "Add schedule from dashboard";
+            document.getElementById('stockCount').textContent = "--";
+            document.getElementById('doseQty').textContent = "--";
+        }
+    } catch (e) {
+        document.getElementById('nextMed').textContent = "Dashboard offline";
+        document.getElementById('nextInfo').textContent = "Check API service";
+    }
+}
+
+function simulateDispense() {
+    showScreen('dispensing');
+    let count = 0;
+    const target = Number(currentDose.qty || 2);
+    document.getElementById('pillProgress').textContent = `0 / ${target}`;
+
+    const timer = setInterval(() => {
+        count++;
+        document.getElementById('pillProgress').textContent = `${count} / ${target}`;
+
+        if (count >= target) {
+            clearInterval(timer);
+            setTimeout(() => {
+                showScreen('verify');
+                setTimeout(() => showScreen('success'), 1800);
+            }, 500);
+        }
+    }, 900);
+}
+
+function showError(msg) {
+    document.getElementById('errorText').textContent = msg;
+    showScreen('error');
+}
+
+function alertBox(msg) {
+    document.getElementById('errorText').textContent = msg;
+    showScreen('error');
+}
+
+setInterval(updateClock, 1000);
+setInterval(loadData, 30000);
+
+updateClock();
+loadData();
+</script>
+
+</body>
+</html>

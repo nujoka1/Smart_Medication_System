@@ -164,8 +164,7 @@ def start_api():
 @app.route('/tft')
 def tft_dashboard():
     return render_template('tft.html')
-
-if __name__ == '__main__': start_api()
+\nif __name__ == '__main__': start_api()
 
 @app.route('/api/patient', methods=['POST'])
 def add_patient():

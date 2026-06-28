@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MedSystem TFT</title>
+<meta name="viewport" content="width=480, height=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+:root {
+    --bg: #090816;
+    --panel: #151128;
+    --panel2: #1d1538;
+    --purple: #7c3aed;
+    --purple2: #a855f7;
+    --green: #00c853;
+    --green2: #18e179;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #ffffff;
+    --muted: #b9aecf;
+    --line: #332552;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    width: 480px;
+    height: 320px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    cursor: none;
+}
+
+.screen {
+    display: none;
+    width: 480px;
+    height: 320px;
+    padding: 8px;
+    position: relative;
+}
+
+.screen.active {
+    display: block;
+}
+
+.header {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 7px;
+}
+
+.brand {
+    font-size: 19px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    color: var(--green2);
+}
+
+.title {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--purple2);
+}
+
+.time {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.card {
+    background: linear-gradient(145deg, var(--panel), var(--panel2));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+
+.big {
+    font-size: 25px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-top: 3px;
+}
+
+.med {
+    color: var(--text);
+}
+
+.sub {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+}
+
+.stat {
+    flex: 1;
+    min-height: 56px;
+    padding: 8px;
+    border-radius: 12px;
+    background: #100d20;
+    border: 1px solid var(--line);
+}
+
+.stat .value {
+    font-size: 21px;
+    font-weight: 900;
+    color: var(--green2);
+}
+
+.stat .name {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.bottom {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.bottom.three {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+button {
+    height: 56px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 900;
+    color: white;
+}
+
+.btn-purple { background: var(--purple); }
+.btn-green { background: var(--green); color: #031207; }
+.btn-dark { background: #24193f; border: 1px solid var(--line); }
+.btn-amber { background: var(--amber); color: #1b1201; }
+.btn-red { background: var(--red); }
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.menu-btn {
+    height: 76px;
+    background: #17112b;
+    border: 1px solid var(--line);
+    text-align: left;
+    padding: 8px 10px;
+}
+
+.menu-btn .m-title {
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.menu-btn .m-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.list {
+    height: 204px;
+    overflow: hidden;
+}
+
+.item {
+    min-height: 48px;
+    background: #100d20;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 7px 8px;
+    margin-bottom: 6px;
+}
+
+.item-main {
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.item-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.center {
+    height: 198px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.count {
+    font-size: 60px;
+    font-weight: 900;
+    color: var(--green2);
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    background: rgba(0, 200, 83, 0.15);
+    color: var(--green2);
+    border: 1px solid rgba(0, 200, 83, 0.35);
+}
+
+.badge.warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.badge.err {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--red);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.control {
+    background: #100d20;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.control .num {
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--green2);
+}
+
+.small-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.small-btns button {
+    height: 38px;
+    font-size: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+    <div class="header">
+        <div class="brand">MEDSYSTEM</div>
+        <div class="time" id="clock">--:--</div>
+    </div>
+
+    <div class="card">
+        <div class="label">NEXT SCHEDULED DOSE</div>
+        <div class="big med" id="homeMed">Loading...</div>
+        <div class="sub" id="homeInfo">Checking today’s schedule</div>
+    </div>
+
+    <div class="row">
+        <div class="stat">
+            <div class="value" id="homeQty">--</div>
+            <div class="name">Dose Qty</div>
+        </div>
+        <div class="stat">
+            <div class="value" id="homeStock">--</div>
+            <div class="name">Stock Left</div>
+        </div>
+        <div class="stat">
+            <div class="value" id="homeDue">--</div>
+            <div class="name">Due Time</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-purple" onclick="showScreen('schedule')">Schedule</button>
+        <button class="btn-green" onclick="showScreen('menu')">Menu</button>
+    </div>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="screen">
+    <div class="header">
+        <div class="title">LOCAL CONTROL</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="menu-grid">
+        <button class="menu-btn" onclick="showScreen('schedule')">
+            <div class="m-title">Today</div>
+            <div class="m-sub">View alarms and doses</div>
+        </button>
+
+        <button class="menu-btn" onclick="showScreen('stock')">
+            <div class="m-title">Stock</div>
+            <div class="m-sub">Medication quantity left</div>
+        </button>
+
+        <button class="menu-btn" onclick="showScreen('logs')">
+            <div class="m-title">History</div>
+            <div class="m-sub">Last dispense records</div>
+        </button>
+
+        <button class="menu-btn" onclick="showScreen('settings')">
+            <div class="m-title">Settings</div>
+            <div class="m-sub">Time, alarm, brightness</div>
+        </button>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('home')">Back</button>
+        <button class="btn-purple" onclick="showScreen('setup')">Add Alarm</button>
+    </div>
+</div>
+
+<!-- SCHEDULE -->
+<div id="schedule" class="screen">
+    <div class="header">
+        <div class="title">TODAY SCHEDULE</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="list" id="scheduleList">
+        <div class="item">
+            <div class="item-main">Loading schedule...</div>
+            <div class="item-sub">Please wait</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('home')">Back</button>
+        <button class="btn-purple" onclick="showScreen('setup')">Add / Edit</button>
+    </div>
+</div>
+
+<!-- STOCK -->
+<div id="stock" class="screen">
+    <div class="header">
+        <div class="title">MEDICATION STOCK</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="list" id="stockList">
+        <div class="item">
+            <div class="item-main">Loading stock...</div>
+            <div class="item-sub">Please wait</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('menu')">Back</button>
+        <button class="btn-purple" onclick="showScreen('setup')">Update</button>
+    </div>
+</div>
+
+<!-- LOGS -->
+<div id="logs" class="screen">
+    <div class="header">
+        <div class="title">DISPENSE HISTORY</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="list" id="logList">
+        <div class="item">
+            <div class="item-main">Loading logs...</div>
+            <div class="item-sub">Please wait</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('menu')">Back</button>
+        <button class="btn-green" onclick="loadData()">Refresh</button>
+    </div>
+</div>
+
+<!-- SETUP / ADD ALARM PLACEHOLDER -->
+<div id="setup" class="screen">
+    <div class="header">
+        <div class="title">ALARM SETUP</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="form-row">
+        <div class="control">
+            <div class="label">Hour</div>
+            <div class="num" id="setHour">08</div>
+            <div class="small-btns">
+                <button class="btn-dark" onclick="adjustHour(-1)">−</button>
+                <button class="btn-purple" onclick="adjustHour(1)">+</button>
+            </div>
+        </div>
+
+        <div class="control">
+            <div class="label">Minute</div>
+            <div class="num" id="setMinute">00</div>
+            <div class="small-btns">
+                <button class="btn-dark" onclick="adjustMinute(-5)">−</button>
+                <button class="btn-purple" onclick="adjustMinute(5)">+</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="label">Local setup mode</div>
+        <div class="sub">Full save-to-database connection comes after hardware/API cleanup.</div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('menu')">Cancel</button>
+        <button class="btn-green" onclick="showMessage('Alarm UI ready. Save API comes next.')">Save</button>
+    </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" class="screen">
+    <div class="header">
+        <div class="title">SETTINGS</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="menu-grid">
+        <button class="menu-btn" onclick="showMessage('Sound settings coming next')">
+            <div class="m-title">Alarm Sound</div>
+            <div class="m-sub">Buzzer and alert tone</div>
+        </button>
+
+        <button class="menu-btn" onclick="showMessage('Brightness control coming next')">
+            <div class="m-title">Brightness</div>
+            <div class="m-sub">Screen/backlight</div>
+        </button>
+
+        <button class="menu-btn" onclick="showMessage('WiFi page coming next')">
+            <div class="m-title">Network</div>
+            <div class="m-sub">WiFi/hotspot status</div>
+        </button>
+
+        <button class="menu-btn" onclick="showMessage('Admin PIN coming next')">
+            <div class="m-title">Admin</div>
+            <div class="m-sub">Protected controls</div>
+        </button>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('menu')">Back</button>
+        <button class="btn-green" onclick="loadData()">Refresh</button>
+    </div>
+</div>
+
+<!-- DUE SCREEN -->
+<div id="due" class="screen">
+    <div class="header">
+        <div class="title">MEDICATION DUE</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="card">
+        <div class="label">PATIENT</div>
+        <div class="big" id="duePatient">Demo Patient</div>
+        <div class="sub" id="dueMed">Medication</div>
+    </div>
+
+    <div class="row">
+        <div class="stat">
+            <div class="value" id="dueQty">--</div>
+            <div class="name">Required</div>
+        </div>
+        <div class="stat">
+            <div class="value" id="dueStock">--</div>
+            <div class="name">Available</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-amber" onclick="showScreen('home')">Acknowledge</button>
+        <button class="btn-green" onclick="showMessage('Auto-dispense will be connected after hardware layer.')">Ready</button>
+    </div>
+</div>
+
+<!-- DISPENSING -->
+<div id="dispensing" class="screen">
+    <div class="header">
+        <div class="title">DISPENSING</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="center">
+        <div>
+            <div class="label">PILLS PASSED</div>
+            <div class="count" id="pillProgress">0 / 0</div>
+            <div class="sub">Motor and IR counting active</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-red" onclick="showMessage('Emergency stop will connect to motor controller.')">STOP</button>
+        <button class="btn-dark" onclick="showScreen('home')">Home</button>
+    </div>
+</div>
+
+<!-- MESSAGE -->
+<div id="message" class="screen">
+    <div class="header">
+        <div class="title" id="msgTitle">NOTICE</div>
+        <div class="time"></div>
+    </div>
+
+    <div class="center">
+        <div>
+            <div class="big" id="msgText">Message</div>
+            <div class="sub">This screen is ready for backend connection.</div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('menu')">Menu</button>
+        <button class="btn-green" onclick="showScreen('home')">Home</button>
+    </div>
+</div>
+
+<script>
+let currentDose = null;
+let setHour = 8;
+let setMinute = 0;
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function showMessage(msg) {
+    document.getElementById('msgText').textContent = msg;
+    showScreen('message');
+}
+
+function updateClock() {
+    const now = new Date();
+    const t = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.querySelectorAll('.time').forEach(el => el.textContent = t);
+}
+
+function adjustHour(delta) {
+    setHour = (setHour + delta + 24) % 24;
+    document.getElementById('setHour').textContent = String(setHour).padStart(2, '0');
+}
+
+function adjustMinute(delta) {
+    setMinute = (setMinute + delta + 60) % 60;
+    document.getElementById('setMinute').textContent = String(setMinute).padStart(2, '0');
+}
+
+function statusBadge(stock) {
+    if (stock === undefined || stock === null || stock === "--") return '<span class="badge warn">UNKNOWN</span>';
+    if (Number(stock) <= 3) return '<span class="badge err">LOW</span>';
+    if (Number(stock) <= 8) return '<span class="badge warn">CHECK</span>';
+    return '<span class="badge">OK</span>';
+}
+
+async function loadData() {
+    try {
+        const [scheduleRes, medsRes, logsRes, statusRes] = await Promise.all([
+            fetch('/api/schedule/today'),
+            fetch('/api/medications'),
+            fetch('/api/logs?limit=4'),
+            fetch('/api/status')
+        ]);
+
+        const schedule = await scheduleRes.json();
+        const meds = await medsRes.json();
+        const logs = await logsRes.json();
+        const status = await statusRes.json();
+
+        renderHome(schedule, meds);
+        renderSchedule(schedule, meds);
+        renderStock(meds);
+        renderLogs(logs);
+
+    } catch (e) {
+        document.getElementById('homeMed').textContent = "API offline";
+        document.getElementById('homeInfo').textContent = "Check medsystem-api.service";
+    }
+}
+
+function renderHome(schedule, meds) {
+    if (!schedule || schedule.length === 0) {
+        document.getElementById('homeMed').textContent = "No dose scheduled";
+        document.getElementById('homeInfo').textContent = "Use Add Alarm or web dashboard";
+        document.getElementById('homeQty').textContent = "--";
+        document.getElementById('homeStock').textContent = "--";
+        document.getElementById('homeDue').textContent = "--";
+        currentDose = null;
+        return;
+    }
+
+    const next = schedule[0];
+    const medInfo = meds.find(m => m.name === next.med) || {};
+    currentDose = { ...next, stock: medInfo.stock ?? "--" };
+
+    document.getElementById('homeMed').textContent = next.med || "Medication";
+    document.getElementById('homeInfo').textContent = `${next.patient || 'Patient'} | Compartment ${next.compartment ?? '-'}`;
+    document.getElementById('homeQty').textContent = next.qty ?? "--";
+    document.getElementById('homeStock').textContent = currentDose.stock;
+    document.getElementById('homeDue').textContent = next.time || "--";
+
+    document.getElementById('duePatient').textContent = next.patient || "Patient";
+    document.getElementById('dueMed').textContent = next.med || "Medication";
+    document.getElementById('dueQty').textContent = next.qty ?? "--";
+    document.getElementById('dueStock').textContent = currentDose.stock;
+}
+
+function renderSchedule(schedule, meds) {
+    const box = document.getElementById('scheduleList');
+    if (!schedule || schedule.length === 0) {
+        box.innerHTML = '<div class="item"><div class="item-main">No schedule today</div><div class="item-sub">Add alarm from TFT or dashboard</div></div>';
+        return;
+    }
+
+    box.innerHTML = schedule.slice(0, 4).map(s => `
+        <div class="item">
+            <div class="item-main">${s.time || '--:--'} • ${s.med || 'Medication'}</div>
+            <div class="item-sub">${s.patient || 'Patient'} • Qty ${s.qty || 1} • Comp ${s.compartment ?? '-'}</div>
+        </div>
+    `).join('');
+}
+
+function renderStock(meds) {
+    const box = document.getElementById('stockList');
+    if (!meds || meds.length === 0) {
+        box.innerHTML = '<div class="item"><div class="item-main">No medication saved</div><div class="item-sub">Add medications from dashboard</div></div>';
+        return;
+    }
+
+    box.innerHTML = meds.slice(0, 4).map(m => `
+        <div class="item">
+            <div class="item-main">${m.name || 'Medication'} ${statusBadge(m.stock)}</div>
+            <div class="item-sub">Stock: ${m.stock ?? '--'} • Compartment: ${m.compartment ?? '-'}</div>
+        </div>
+    `).join('');
+}
+
+function renderLogs(logs) {
+    const box = document.getElementById('logList');
+    if (!logs || logs.length === 0) {
+        box.innerHTML = '<div class="item"><div class="item-main">No dispense logs yet</div><div class="item-sub">Logs appear after hardware pipeline is connected</div></div>';
+        return;
+    }
+
+    box.innerHTML = logs.slice(0, 4).map(l => `
+        <div class="item">
+            <div class="item-main">${l.outcome || 'event'} • ${l.expected_med || '-'}</div>
+            <div class="item-sub">${l.timestamp || ''} • ${l.patient || '-'}</div>
+        </div>
+    `).join('');
+}
+
+function checkDue() {
+    if (!currentDose || !currentDose.time) return;
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const nowTime = `${hh}:${mm}`;
+
+    if (nowTime === currentDose.time) {
+        showScreen('due');
+    }
+}
+
+setInterval(updateClock, 1000);
+setInterval(loadData, 30000);
+setInterval(checkDue, 15000);
+
+updateClock();
+loadData();
+</script>
+</body>
+</html>
