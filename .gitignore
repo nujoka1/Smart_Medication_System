@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+venv/
+.env
+
+# Logs
+logs/*.log
+*.log
+
+# Runtime data
+data/captures/
+*.jpg
+*.jpeg
+*.png
+
+# SQLite runtime database
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Archives / downloaded libraries
+master.zip
+pigpio-master/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
