@@ -5,6 +5,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from src.core.database import init_db, get_session, Patient, Medication, Schedule, DispenseLog
 from config import APIConfig
+from pathlib import Path
 
 app = Flask(__name__, template_folder='../../templates', static_folder='../../static')
 app.config['SECRET_KEY'] = APIConfig.SECRET_KEY
@@ -164,6 +165,110 @@ def start_api():
 @app.route('/tft')
 def tft_dashboard():
     return render_template('tft.html')
+
+
+
+@app.route('/api/ai/classes')
+def ai_supported_classes():
+    class_file = Path('data/ai_classes.txt')
+    if not class_file.exists():
+        return jsonify([])
+
+    classes = []
+    for raw in class_file.read_text().splitlines():
+        c = raw.strip()
+        if not c:
+            continue
+        classes.append(dict(
+            ai_class=c,
+            label=c.replace('_', ' ').title()
+        ))
+
+    return jsonify(classes)
+
+
+@app.route('/api/medications', methods=['POST'])
+def create_medication_from_tft():
+    d = request.get_json() or {}
+
+    name = (d.get('name') or '').strip()
+    if not name:
+        return jsonify(dict(error='Medication name required')), 400
+
+    ai_class_name = (d.get('ai_class_name') or 'custom').strip()
+
+    try:
+        compartment = int(d.get('compartment', 0))
+        stock_count = int(d.get('stock_count', 30))
+        low_stock_alert = int(d.get('low_stock_alert', 5))
+        dose_mg = float(d.get('dose_mg', 0))
+        weight_per_pill = float(d.get('weight_per_pill', 0.5))
+    except Exception:
+        return jsonify(dict(error='Invalid numeric medication field')), 400
+
+    with get_session(get_engine()) as s:
+        med = Medication(
+            name=name,
+            ai_class_name=ai_class_name,
+            dose_mg=dose_mg,
+            weight_per_pill=weight_per_pill,
+            compartment=compartment,
+            stock_count=stock_count,
+            low_stock_alert=low_stock_alert
+        )
+        s.add(med)
+        s.commit()
+
+        return jsonify(dict(
+            success=True,
+            id=med.id,
+            name=med.name,
+            ai_class=med.ai_class_name,
+            compartment=med.compartment,
+            stock=med.stock_count,
+            mode='ai_supported' if med.ai_class_name != 'custom' else 'custom_count_camera'
+        )), 201
+
+
+
+
+@app.route('/api/medications/<int:mid>/stock', methods=['POST'])
+def update_medication_stock(mid):
+    d = request.get_json() or {}
+
+    if 'stock_count' not in d:
+        return jsonify(dict(error='stock_count required')), 400
+
+    try:
+        stock_count = int(d.get('stock_count'))
+    except Exception:
+        return jsonify(dict(error='Invalid stock_count')), 400
+
+    if stock_count < 0:
+        return jsonify(dict(error='stock_count cannot be negative')), 400
+
+    with get_session(get_engine()) as s:
+        med = s.get(Medication, mid)
+        if not med:
+            return jsonify(dict(error='Medication not found')), 404
+
+        med.stock_count = stock_count
+        s.commit()
+
+        socketio.emit('stock_updated', dict(
+            medication_id=med.id,
+            name=med.name,
+            stock=med.stock_count
+        ))
+
+        return jsonify(dict(
+            success=True,
+            id=med.id,
+            name=med.name,
+            stock=med.stock_count,
+            compartment=med.compartment
+        ))
+
 
 if __name__ == '__main__': start_api()
 

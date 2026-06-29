@@ -1,0 +1,424 @@
+/*
+MedSystem TFT Medication Setup
+Adds AI-supported medication selection and "My medication is not listed" flow.
+*/
+
+let aiClassList = [];
+let medSetupPatients = [];
+let medSetupMeds = [];
+
+let aiPage = 0;
+let aiPageSize = 4;
+
+let selectedMode = "ai";
+let selectedAiClass = null;
+let selectedMedName = "";
+let selectedCompartment = 1;
+let selectedStock = 30;
+let selectedDoseQty = 1;
+let selectedHour = 8;
+let selectedMinute = 0;
+
+(function initMedSetupModule() {
+    injectMedSetupCSS();
+    injectMedSetupScreens();
+
+    // Override old openSetup if it exists
+    window.openSetup = openMedicationSetup;
+    window.openMedicationSetup = openMedicationSetup;
+
+    // Make any Add Alarm buttons use the new workflow
+    setTimeout(() => {
+        document.querySelectorAll("button").forEach(btn => {
+            if ((btn.textContent || "").trim().toLowerCase().includes("add alarm")) {
+                btn.onclick = openMedicationSetup;
+            }
+        });
+    }, 1000);
+})();
+
+function injectMedSetupCSS() {
+    if (document.getElementById("medsetup-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "medsetup-css";
+    style.textContent = `
+        .ai-list {
+            height: 202px;
+            overflow: hidden;
+        }
+
+        .ai-option {
+            width: 100%;
+            min-height: 44px;
+            margin-bottom: 6px;
+            background: #151128;
+            border: 1px solid #332552;
+            border-radius: 11px;
+            color: #fff;
+            text-align: left;
+            padding: 7px 10px;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .ai-option small {
+            display: block;
+            font-size: 10px;
+            color: #b9aecf;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .ai-other {
+            background: #0f2d22;
+            border-color: rgba(0, 200, 83, 0.45);
+            color: #18e179;
+        }
+
+        .setup-compact {
+            height: 52px;
+            min-height: 52px;
+            padding: 6px;
+        }
+
+        .setup-compact .value {
+            font-size: 18px;
+        }
+
+        .setup-compact .name {
+            font-size: 10px;
+        }
+
+        .tiny-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 4px;
+        }
+
+        .tiny-btns button {
+            height: 32px;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        .mode-note {
+            font-size: 13px;
+            color: #b9aecf;
+            line-height: 1.35;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function injectMedSetupScreens() {
+    if (document.getElementById("ai-med-select")) return;
+
+    const screens = document.createElement("div");
+    screens.innerHTML = `
+        <!-- AI MEDICATION SELECT -->
+        <div id="ai-med-select" class="screen">
+            <div class="header">
+                <div class="title">SELECT MEDICATION</div>
+                <div class="time"></div>
+            </div>
+
+            <div class="ai-list" id="aiClassListBox">
+                <button class="ai-option">Loading AI medication list...</button>
+            </div>
+
+            <div class="bottom three">
+                <button class="btn-dark" onclick="showScreen('menu')">Back</button>
+                <button class="btn-purple" onclick="changeAiPage(-1)">Prev</button>
+                <button class="btn-green" onclick="changeAiPage(1)">Next</button>
+            </div>
+        </div>
+
+        <!-- CUSTOM MEDICATION NOTICE -->
+        <div id="custom-med-notice" class="screen">
+            <div class="header">
+                <div class="title">CUSTOM MEDICATION</div>
+                <div class="time"></div>
+            </div>
+
+            <div class="card">
+                <div class="label">AI VERIFICATION</div>
+                <div class="big" style="font-size:22px;">Medicine not in AI list</div>
+                <div class="mode-note" style="margin-top:8px;">
+                    The system will still dispense using the selected compartment,
+                    count pills with the IR sensor, and save a camera record.
+                    AI verification will be skipped.
+                </div>
+            </div>
+
+            <div class="bottom">
+                <button class="btn-dark" onclick="showScreen('ai-med-select')">Back</button>
+                <button class="btn-green" onclick="selectCustomMedication()">Continue</button>
+            </div>
+        </div>
+
+        <!-- MEDICATION SETUP -->
+        <div id="med-setup" class="screen">
+            <div class="header">
+                <div class="title">SET ALARM</div>
+                <div class="time"></div>
+            </div>
+
+            <div class="card" style="height:72px;">
+                <div class="label" id="medSetupModeLabel">AI SUPPORTED</div>
+                <div class="big" id="medSetupName" style="font-size:20px;">Medication</div>
+                <div class="sub" id="medSetupDesc">AI + camera + pill count</div>
+            </div>
+
+            <div class="row">
+                <div class="stat setup-compact">
+                    <div class="name">Hour</div>
+                    <div class="value" id="msHour">08</div>
+                    <div class="tiny-btns">
+                        <button class="btn-dark" onclick="adjustMS('hour', -1)">−</button>
+                        <button class="btn-purple" onclick="adjustMS('hour', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="stat setup-compact">
+                    <div class="name">Minute</div>
+                    <div class="value" id="msMinute">00</div>
+                    <div class="tiny-btns">
+                        <button class="btn-dark" onclick="adjustMS('minute', -5)">−</button>
+                        <button class="btn-purple" onclick="adjustMS('minute', 5)">+</button>
+                    </div>
+                </div>
+
+                <div class="stat setup-compact">
+                    <div class="name">Qty</div>
+                    <div class="value" id="msQty">1</div>
+                    <div class="tiny-btns">
+                        <button class="btn-dark" onclick="adjustMS('qty', -1)">−</button>
+                        <button class="btn-purple" onclick="adjustMS('qty', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:8px;">
+                <div class="stat setup-compact">
+                    <div class="name">Compartment</div>
+                    <div class="value" id="msComp">1</div>
+                    <div class="tiny-btns">
+                        <button class="btn-dark" onclick="adjustMS('comp', -1)">−</button>
+                        <button class="btn-purple" onclick="adjustMS('comp', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="stat setup-compact">
+                    <div class="name">Stock</div>
+                    <div class="value" id="msStock">30</div>
+                    <div class="tiny-btns">
+                        <button class="btn-dark" onclick="adjustMS('stock', -5)">−</button>
+                        <button class="btn-purple" onclick="adjustMS('stock', 5)">+</button>
+                    </div>
+                </div>
+
+                <div class="stat setup-compact">
+                    <div class="name">Days</div>
+                    <div class="value" style="font-size:16px;">Daily</div>
+                    <div class="name">All week</div>
+                </div>
+            </div>
+
+            <div class="bottom three">
+                <button class="btn-dark" onclick="showScreen('ai-med-select')">Back</button>
+                <button class="btn-purple" onclick="showScreen('menu')">Cancel</button>
+                <button class="btn-green" onclick="saveMedSetup()">Save</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(screens);
+}
+
+async function openMedicationSetup() {
+    try {
+        const [classesRes, patientsRes, medsRes] = await Promise.all([
+            fetch("/api/ai/classes"),
+            fetch("/api/patients"),
+            fetch("/api/medications")
+        ]);
+
+        aiClassList = await classesRes.json();
+        medSetupPatients = await patientsRes.json();
+        medSetupMeds = await medsRes.json();
+
+        if (!medSetupPatients || medSetupPatients.length === 0) {
+            showMessage("No patient found. Add patient first.");
+            return;
+        }
+
+        aiPage = 0;
+        renderAiClassPage();
+        showScreen("ai-med-select");
+
+    } catch (e) {
+        showMessage("Cannot load medication setup data.");
+    }
+}
+
+function renderAiClassPage() {
+    const box = document.getElementById("aiClassListBox");
+    if (!box) return;
+
+    const start = aiPage * aiPageSize;
+    const pageItems = aiClassList.slice(start, start + aiPageSize);
+
+    let html = "";
+
+    pageItems.forEach((item, i) => {
+        const index = start + i;
+        html += `
+            <button class="ai-option" onclick="selectAiMedication(${index})">
+                ${item.label}
+                <small>AI supported • ${item.ai_class}</small>
+            </button>
+        `;
+    });
+
+    html += `
+        <button class="ai-option ai-other" onclick="showScreen('custom-med-notice')">
+            My medication is not listed
+            <small>Use pill count + camera record only</small>
+        </button>
+    `;
+
+    box.innerHTML = html;
+}
+
+function changeAiPage(delta) {
+    const maxPage = Math.max(0, Math.ceil(aiClassList.length / aiPageSize) - 1);
+    aiPage = Math.max(0, Math.min(maxPage, aiPage + delta));
+    renderAiClassPage();
+}
+
+function selectAiMedication(index) {
+    const item = aiClassList[index];
+    if (!item) return;
+
+    selectedMode = "ai";
+    selectedAiClass = item.ai_class;
+    selectedMedName = item.label;
+
+    selectedCompartment = 1;
+    selectedStock = 30;
+    selectedDoseQty = 1;
+
+    updateMedSetupScreen();
+    showScreen("med-setup");
+}
+
+function selectCustomMedication() {
+    selectedMode = "custom";
+    selectedAiClass = "custom";
+    selectedMedName = "Custom Medication";
+
+    selectedCompartment = 1;
+    selectedStock = 30;
+    selectedDoseQty = 1;
+
+    updateMedSetupScreen();
+    showScreen("med-setup");
+}
+
+function updateMedSetupScreen() {
+    document.getElementById("medSetupName").textContent = selectedMedName;
+
+    if (selectedMode === "ai") {
+        document.getElementById("medSetupModeLabel").textContent = "AI SUPPORTED";
+        document.getElementById("medSetupDesc").textContent = "AI + camera + pill count";
+    } else {
+        document.getElementById("medSetupModeLabel").textContent = "CUSTOM / COUNT ONLY";
+        document.getElementById("medSetupDesc").textContent = "AI skipped • camera record saved";
+    }
+
+    document.getElementById("msHour").textContent = String(selectedHour).padStart(2, "0");
+    document.getElementById("msMinute").textContent = String(selectedMinute).padStart(2, "0");
+    document.getElementById("msQty").textContent = selectedDoseQty;
+    document.getElementById("msComp").textContent = selectedCompartment;
+    document.getElementById("msStock").textContent = selectedStock;
+}
+
+function adjustMS(field, delta) {
+    if (field === "hour") selectedHour = (selectedHour + delta + 24) % 24;
+    if (field === "minute") selectedMinute = (selectedMinute + delta + 60) % 60;
+    if (field === "qty") selectedDoseQty = Math.max(1, Math.min(10, selectedDoseQty + delta));
+    if (field === "comp") selectedCompartment = Math.max(1, Math.min(6, selectedCompartment + delta));
+    if (field === "stock") selectedStock = Math.max(0, Math.min(999, selectedStock + delta));
+
+    updateMedSetupScreen();
+}
+
+async function saveMedSetup() {
+    if (!medSetupPatients || medSetupPatients.length === 0) {
+        showMessage("No patient available.");
+        return;
+    }
+
+    const patient = medSetupPatients[0];
+    const doseTime = `${String(selectedHour).padStart(2, "0")}:${String(selectedMinute).padStart(2, "0")}`;
+
+    try {
+        const medPayload = {
+            name: selectedMedName,
+            ai_class_name: selectedMode === "ai" ? selectedAiClass : "custom",
+            compartment: selectedCompartment,
+            stock_count: selectedStock,
+            low_stock_alert: 5,
+            dose_mg: 0,
+            weight_per_pill: 0.5
+        };
+
+        const medRes = await fetch("/api/medications", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(medPayload)
+        });
+
+        const medData = await medRes.json();
+
+        if (!medRes.ok) {
+            showMessage(medData.error || "Could not save medication.");
+            return;
+        }
+
+        const schedulePayload = {
+            patient_id: patient.id,
+            medication_id: medData.id,
+            dose_time: doseTime,
+            dose_quantity: selectedDoseQty,
+            compartment: selectedCompartment,
+            days_of_week: "0123456"
+        };
+
+        const schRes = await fetch("/api/schedule", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(schedulePayload)
+        });
+
+        const schData = await schRes.json();
+
+        if (!schRes.ok) {
+            showMessage(schData.error || "Could not save schedule.");
+            return;
+        }
+
+        await loadData();
+
+        if (selectedMode === "ai") {
+            showMessage(`Saved: ${selectedMedName} at ${doseTime}`);
+        } else {
+            showMessage(`Saved custom medication at ${doseTime}. AI will be skipped.`);
+        }
+
+    } catch (e) {
+        showMessage("API error while saving medication.");
+    }
+}

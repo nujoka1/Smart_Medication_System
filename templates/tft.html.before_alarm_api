@@ -354,7 +354,7 @@ button {
 
     <div class="bottom">
         <button class="btn-dark" onclick="showScreen('home')">Back</button>
-        <button class="btn-purple" onclick="openSetup()">Add Alarm</button>
+        <button class="btn-purple" onclick="showScreen('setup')">Add Alarm</button>
     </div>
 </div>
 
@@ -374,7 +374,7 @@ button {
 
     <div class="bottom">
         <button class="btn-dark" onclick="showScreen('home')">Back</button>
-        <button class="btn-purple" onclick="openSetup()">Add / Edit</button>
+        <button class="btn-purple" onclick="showScreen('setup')">Add / Edit</button>
     </div>
 </div>
 
@@ -394,7 +394,7 @@ button {
 
     <div class="bottom">
         <button class="btn-dark" onclick="showScreen('menu')">Back</button>
-        <button class="btn-purple" onclick="openSetup()">Update</button>
+        <button class="btn-purple" onclick="showScreen('setup')">Update</button>
     </div>
 </div>
 
@@ -418,22 +418,15 @@ button {
     </div>
 </div>
 
-
-<!-- SETUP / ADD ALARM -->
+<!-- SETUP / ADD ALARM PLACEHOLDER -->
 <div id="setup" class="screen">
     <div class="header">
-        <div class="title">ADD ALARM</div>
+        <div class="title">ALARM SETUP</div>
         <div class="time"></div>
     </div>
 
-    <div class="card" style="height:78px;">
-        <div class="label">Medication</div>
-        <div class="big" id="setupMedName" style="font-size:21px;">Loading...</div>
-        <div class="sub" id="setupMedMeta">Select medication</div>
-    </div>
-
-    <div class="row">
-        <div class="control" style="flex:1;">
+    <div class="form-row">
+        <div class="control">
             <div class="label">Hour</div>
             <div class="num" id="setHour">08</div>
             <div class="small-btns">
@@ -442,7 +435,7 @@ button {
             </div>
         </div>
 
-        <div class="control" style="flex:1;">
+        <div class="control">
             <div class="label">Minute</div>
             <div class="num" id="setMinute">00</div>
             <div class="small-btns">
@@ -450,21 +443,16 @@ button {
                 <button class="btn-purple" onclick="adjustMinute(5)">+</button>
             </div>
         </div>
-
-        <div class="control" style="flex:1;">
-            <div class="label">Qty</div>
-            <div class="num" id="setupQty">1</div>
-            <div class="small-btns">
-                <button class="btn-dark" onclick="adjustQty(-1)">−</button>
-                <button class="btn-purple" onclick="adjustQty(1)">+</button>
-            </div>
-        </div>
     </div>
 
-    <div class="bottom three">
-        <button class="btn-dark" onclick="showScreen('menu')">Back</button>
-        <button class="btn-purple" onclick="adjustSetupMed(1)">Next Med</button>
-        <button class="btn-green" onclick="saveScheduleFromTFT()">Save</button>
+    <div class="card">
+        <div class="label">Local setup mode</div>
+        <div class="sub">Full save-to-database connection comes after hardware/API cleanup.</div>
+    </div>
+
+    <div class="bottom">
+        <button class="btn-dark" onclick="showScreen('menu')">Cancel</button>
+        <button class="btn-green" onclick="showMessage('Alarm UI ready. Save API comes next.')">Save</button>
     </div>
 </div>
 
@@ -727,120 +715,6 @@ setInterval(checkDue, 15000);
 
 updateClock();
 loadData();
-
-/* ===== TFT LOCAL ALARM SETUP API ===== */
-let tftPatients = [];
-let tftMeds = [];
-let setupMedIndex = 0;
-let setupQty = 1;
-
-async function openSetup() {
-    try {
-        const [patientsRes, medsRes] = await Promise.all([
-            fetch('/api/patients'),
-            fetch('/api/medications')
-        ]);
-
-        tftPatients = await patientsRes.json();
-        tftMeds = await medsRes.json();
-
-        if (!tftPatients || tftPatients.length === 0) {
-            showMessage('No patient found. Add patient from main dashboard first.');
-            return;
-        }
-
-        if (!tftMeds || tftMeds.length === 0) {
-            showMessage('No medication found. Add medication from main dashboard first.');
-            return;
-        }
-
-        setupMedIndex = 0;
-        setupQty = 1;
-        document.getElementById('setupQty').textContent = setupQty;
-
-        updateSetupMedication();
-        showScreen('setup');
-
-    } catch (e) {
-        showMessage('Cannot load patient or medication list.');
-    }
-}
-
-function updateSetupMedication() {
-    if (!tftMeds || tftMeds.length === 0) return;
-
-    const med = tftMeds[setupMedIndex];
-
-    document.getElementById('setupMedName').textContent = med.name || 'Medication';
-    document.getElementById('setupMedMeta').textContent =
-        `Stock ${med.stock ?? '--'} • Compartment ${med.compartment ?? '-'}`;
-}
-
-function adjustSetupMed(delta) {
-    if (!tftMeds || tftMeds.length === 0) return;
-
-    setupMedIndex = (setupMedIndex + delta + tftMeds.length) % tftMeds.length;
-    updateSetupMedication();
-}
-
-function adjustQty(delta) {
-    setupQty = Math.max(1, Math.min(10, setupQty + delta));
-    document.getElementById('setupQty').textContent = setupQty;
-}
-
-async function saveScheduleFromTFT() {
-    if (!tftPatients || tftPatients.length === 0) {
-        showMessage('No patient available.');
-        return;
-    }
-
-    if (!tftMeds || tftMeds.length === 0) {
-        showMessage('No medication available.');
-        return;
-    }
-
-    const patient = tftPatients[0];
-    const med = tftMeds[setupMedIndex];
-
-    const hour = document.getElementById('setHour').textContent.padStart(2, '0');
-    const minute = document.getElementById('setMinute').textContent.padStart(2, '0');
-
-    const payload = {
-        patient_id: patient.id,
-        medication_id: med.id,
-        dose_time: `${hour}:${minute}`,
-        dose_quantity: setupQty,
-        compartment: med.compartment ?? 0,
-        days_of_week: '0123456'
-    };
-
-    try {
-        const res = await fetch('/api/schedule', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            showMessage(data.error || 'Failed to save alarm.');
-            return;
-        }
-
-        showMessage(`Alarm saved: ${med.name} at ${payload.dose_time}`);
-        await loadData();
-
-    } catch (e) {
-        showMessage('Network/API error while saving alarm.');
-    }
-}
-
 </script>
-<script src="/static/tft_med_setup.js"></script>
-<script src="/static/tft_custom_name.js"></script>
-<script src="/static/tft_schedule_pager.js?v=5"></script>
-<script src="/static/tft_schedule_manage.js?v=1"></script>
-<script src="/static/tft_stock_manage.js?v=1"></script>
 </body>
 </html>
