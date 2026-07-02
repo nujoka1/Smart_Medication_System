@@ -1,0 +1,28 @@
+{
+  "evidence_id": "20260629_152705_e7c5f5",
+  "success": true,
+  "created_at": "2026-06-29T15:27:08.955854",
+  "patient_id": null,
+  "schedule_id": null,
+  "medication_id": null,
+  "expected_name": "Aspirin Ultra 500 Mg",
+  "expected_ai_class": "aspirin_ultra_500_mg",
+  "verification_mode": "ai_camera_count",
+  "ir_target_count": 1,
+  "ir_actual_count": 1,
+  "model_result": {
+    "available": true,
+    "detected_class": "Ibuprofen 400mg",
+    "confidence": 0.9740624693665417,
+    "bbox": null,
+    "error": null
+  },
+  "model_used_for_decision": true,
+  "decision": "AI_MISMATCH_WARNING",
+  "raw_image_path": "data/evidence/20260629_152705_e7c5f5/raw.jpg",
+  "annotated_image_path": "data/evidence/20260629_152705_e7c5f5/annotated.jpg",
+  "raw_url": "/api/evidence/20260629_152705_e7c5f5/raw.jpg",
+  "annotated_url": "/api/evidence/20260629_152705_e7c5f5/annotated.jpg",
+  "elapsed_ms": 3576,
+  "led_gpio": "BCM GPIO12 / physical pin 32"
+}

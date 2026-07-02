@@ -1,0 +1,33 @@
+{
+  "evidence_id": "20260629_163011_dd4e92",
+  "success": true,
+  "created_at": "2026-06-29T16:30:17.540647",
+  "patient_id": null,
+  "schedule_id": null,
+  "medication_id": null,
+  "dose_time": "14:00",
+  "dose_period": "Afternoon dose",
+  "dose_quantity": 1,
+  "compartment": 3,
+  "expected_name": "Local Paracetamol 500mg",
+  "expected_ai_class": "custom",
+  "verification_mode": "count_camera_only",
+  "ir_target_count": 1,
+  "ir_actual_count": 1,
+  "model_result": {
+    "available": true,
+    "detected_class": null,
+    "confidence": null,
+    "bbox": null,
+    "detections": [],
+    "error": null
+  },
+  "model_used_for_decision": false,
+  "decision": "CUSTOM_COUNT_CAMERA",
+  "raw_image_path": "data/evidence/20260629_163011_dd4e92/raw.jpg",
+  "annotated_image_path": "data/evidence/20260629_163011_dd4e92/annotated.jpg",
+  "raw_url": "/api/evidence/20260629_163011_dd4e92/raw.jpg",
+  "annotated_url": "/api/evidence/20260629_163011_dd4e92/annotated.jpg",
+  "elapsed_ms": 5709,
+  "led_gpio": "BCM GPIO12 / physical pin 32"
+}

@@ -1,0 +1,102 @@
+Smart Medication Dispenser Hardware Status Snapshot
+Date: Thu Jul  2 09:24:29 PM WAT 2026
+
+===== SERVICES =====
+active
+active
+
+===== API STATUS =====
+{"cpu_temp":"temp=44.8'C","time":"2026-07-02 21:24:29","uptime":"2344.41s"}
+
+
+===== HARDWARE STATUS =====
+{
+    "cpu_temp": "43.8C",
+    "i2c": {
+        "0x23": {
+            "label": "IR sensors + buzzer expander",
+            "present": true,
+            "raw": "00111110"
+        },
+        "0x25": {
+            "label": "Stepper expander 5/6",
+            "present": true,
+            "raw": "11110111"
+        },
+        "0x26": {
+            "label": "Stepper expander 3/4",
+            "present": true,
+            "raw": "11110111"
+        },
+        "0x27": {
+            "label": "Stepper expander 1/2",
+            "present": true,
+            "raw": "11110111"
+        }
+    },
+    "ir_raw": "00111110",
+    "ok": true,
+    "services": {
+        "medsystem-api.service": "active",
+        "medsystem-tft.service": "active"
+    },
+    "time": "2026-07-02 21:24:29"
+}
+
+===== IR LIVE =====
+{
+    "active_low": true,
+    "address": "0x23",
+    "raw": "00111110",
+    "sensors": [
+        {
+            "bit": 0,
+            "detected": true,
+            "id": 1,
+            "name": "IR1",
+            "pin": "P0",
+            "state": "DETECT"
+        },
+        {
+            "bit": 1,
+            "detected": false,
+            "id": 2,
+            "name": "IR2",
+            "pin": "P1",
+            "state": "CLEAR"
+        },
+        {
+            "bit": 1,
+            "detected": false,
+            "id": 3,
+            "name": "IR3",
+            "pin": "P2",
+            "state": "CLEAR"
+        },
+        {
+            "bit": 1,
+            "detected": false,
+            "id": 4,
+            "name": "IR4",
+            "pin": "P3",
+            "state": "CLEAR"
+        },
+        {
+            "bit": 1,
+            "detected": false,
+            "id": 5,
+            "name": "IR5",
+            "pin": "P4",
+            "state": "CLEAR"
+        },
+        {
+            "bit": 1,
+            "detected": false,
+            "id": 6,
+            "name": "IR6",
+            "pin": "P5",
+            "state": "CLEAR"
+        }
+    ],
+    "success": true
+}

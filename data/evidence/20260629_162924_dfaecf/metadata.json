@@ -1,0 +1,33 @@
+{
+  "evidence_id": "20260629_162924_dfaecf",
+  "success": true,
+  "created_at": "2026-06-29T16:29:30.508903",
+  "patient_id": null,
+  "schedule_id": null,
+  "medication_id": null,
+  "dose_time": "08:00",
+  "dose_period": "Morning dose",
+  "dose_quantity": 1,
+  "compartment": 1,
+  "expected_name": "Aspirin Ultra 500 Mg",
+  "expected_ai_class": "aspirin_ultra_500_mg",
+  "verification_mode": "ai_camera_count",
+  "ir_target_count": 1,
+  "ir_actual_count": 1,
+  "model_result": {
+    "available": true,
+    "detected_class": null,
+    "confidence": null,
+    "bbox": null,
+    "detections": [],
+    "error": null
+  },
+  "model_used_for_decision": true,
+  "decision": "AI_UNCERTAIN_REVIEW",
+  "raw_image_path": "data/evidence/20260629_162924_dfaecf/raw.jpg",
+  "annotated_image_path": "data/evidence/20260629_162924_dfaecf/annotated.jpg",
+  "raw_url": "/api/evidence/20260629_162924_dfaecf/raw.jpg",
+  "annotated_url": "/api/evidence/20260629_162924_dfaecf/annotated.jpg",
+  "elapsed_ms": 5659,
+  "led_gpio": "BCM GPIO12 / physical pin 32"
+}

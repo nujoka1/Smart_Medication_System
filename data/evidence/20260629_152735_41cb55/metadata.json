@@ -1,0 +1,28 @@
+{
+  "evidence_id": "20260629_152735_41cb55",
+  "success": true,
+  "created_at": "2026-06-29T15:27:39.101469",
+  "patient_id": null,
+  "schedule_id": null,
+  "medication_id": null,
+  "expected_name": "Local Paracetamol 500mg",
+  "expected_ai_class": "custom",
+  "verification_mode": "count_camera_only",
+  "ir_target_count": 2,
+  "ir_actual_count": 2,
+  "model_result": {
+    "available": true,
+    "detected_class": "Ibuprofen 400mg",
+    "confidence": 0.9076696571235106,
+    "bbox": null,
+    "error": null
+  },
+  "model_used_for_decision": false,
+  "decision": "CUSTOM_COUNT_CAMERA",
+  "raw_image_path": "data/evidence/20260629_152735_41cb55/raw.jpg",
+  "annotated_image_path": "data/evidence/20260629_152735_41cb55/annotated.jpg",
+  "raw_url": "/api/evidence/20260629_152735_41cb55/raw.jpg",
+  "annotated_url": "/api/evidence/20260629_152735_41cb55/annotated.jpg",
+  "elapsed_ms": 3541,
+  "led_gpio": "BCM GPIO12 / physical pin 32"
+}

@@ -588,7 +588,6 @@ def _run_pill_ai_observation(image_path):
         "detected_class": None,
         "confidence": None,
         "bbox": None,
-        "detections": [],
         "error": None
     }
 
@@ -598,10 +597,7 @@ def _run_pill_ai_observation(image_path):
         # Try common project detector modules/classes
         try:
             from src.ai.pill_detector import PillDetector
-            try:
-                detector = PillDetector(conf=0.15)
-            except TypeError:
-                detector = PillDetector()
+            detector = PillDetector()
         except Exception:
             try:
                 from src.ai.detector import PillDetector
@@ -642,11 +638,6 @@ def _run_pill_ai_observation(image_path):
                 prediction.get("bbox")
                 or prediction.get("box")
                 or prediction.get("xyxy")
-            )
-            result["detections"] = (
-                prediction.get("detections")
-                or prediction.get("results")
-                or []
             )
             return result
 
@@ -760,22 +751,9 @@ def _draw_annotated_evidence(raw_path, annotated_path, metadata):
     draw.text((12, 42), f"AI class: {expected_ai_class}", fill=(180, 160, 255), font=font_small)
     draw.text((12, 65), f"Mode: {verification_mode}", fill=(120, 255, 180), font=font_small)
 
-    # Draw all model detections if available.
-    # If there are no detections but a single bbox exists, draw that one.
-    detections = model.get("detections") or []
-
-    if not detections and model.get("bbox"):
-        detections = [{
-            "class": detected,
-            "confidence": confidence,
-            "bbox": model.get("bbox")
-        }]
-
-    for det in detections[:8]:
-        bbox = det.get("bbox")
-        if not bbox or not isinstance(bbox, (list, tuple)) or len(bbox) < 4:
-            continue
-
+    # Draw bbox only if model returned one
+    bbox = model.get("bbox")
+    if bbox and isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
         try:
             x1, y1, x2, y2 = [float(v) for v in bbox[:4]]
 
@@ -784,33 +762,11 @@ def _draw_annotated_evidence(raw_path, annotated_path, metadata):
                 x1, x2 = x1 * w, x2 * w
                 y1, y2 = y1 * h, y2 * h
 
-            det_class = det.get("class") or detected or "pill"
-            det_conf = det.get("confidence")
-
-            try:
-                det_conf_text = f"{float(det_conf) * 100:.1f}%"
-            except Exception:
-                det_conf_text = "N/A"
-
             draw.rectangle([x1, y1, x2, y2], outline=(0, 255, 120), width=4)
-
-            label = f"{det_class} {det_conf_text}"
-            label_w = min(w - int(x1), 390)
-            label_top = max(0, int(y1) - 32)
-
-            draw.rectangle(
-                [int(x1), label_top, int(x1) + label_w, label_top + 30],
-                fill=(8, 8, 22)
-            )
-            draw.text(
-                (int(x1) + 6, label_top + 5),
-                label,
-                fill=(0, 255, 120),
-                font=font_small
-            )
-
+            draw.rectangle([x1, max(0, y1 - 30), min(w, x1 + 360), y1], fill=(8, 8, 22))
+            draw.text((x1 + 6, max(0, y1 - 28)), f"{detected} {conf_text}", fill=(0, 255, 120), font=font_small)
         except Exception:
-            continue
+            pass
 
     # Footer background
     footer_y = h - 76
@@ -857,26 +813,8 @@ def evidence_capture():
     patient_id = d.get("patient_id")
     schedule_id = d.get("schedule_id")
     medication_id = d.get("medication_id")
-    dose_time = d.get("dose_time")
-    dose_period = d.get("dose_period")
-    dose_quantity = d.get("dose_quantity")
-    compartment = d.get("compartment")
     ir_target_count = d.get("ir_target_count", 0)
     ir_actual_count = d.get("ir_actual_count", 0)
-
-    if not dose_period and dose_time:
-        try:
-            hour = int(str(dose_time).split(":")[0])
-            if 5 <= hour < 12:
-                dose_period = "Morning dose"
-            elif 12 <= hour < 17:
-                dose_period = "Afternoon dose"
-            elif 17 <= hour < 22:
-                dose_period = "Evening dose"
-            else:
-                dose_period = "Night dose"
-        except Exception:
-            dose_period = "Scheduled dose"
 
     LED_GPIO = 12
     gpio_ready = False
@@ -950,10 +888,6 @@ def evidence_capture():
             "patient_id": patient_id,
             "schedule_id": schedule_id,
             "medication_id": medication_id,
-            "dose_time": dose_time,
-            "dose_period": dose_period,
-            "dose_quantity": dose_quantity,
-            "compartment": compartment,
             "expected_name": expected_name,
             "expected_ai_class": expected_ai_class,
             "verification_mode": verification_mode,
