@@ -1,0 +1,36 @@
+Odd Stepper Working Configuration
+
+Confirmed working motors:
+Motor 1 on 0x27
+Motor 3 on 0x26
+Motor 5 on 0x25
+
+Drive mode:
+Full-step two-phase
+
+Logic:
+SAFE_OFF = 0x00
+HIGH = ON
+LOW = OFF
+
+Confirmed coil order:
+P0, P2, P1, P4
+
+Sequence:
+P0 + P2
+P2 + P1
+P1 + P4
+P4 + P0
+
+Confirmed stable speed:
+delay-us = 10000
+
+Working script:
+src/hardware/stepper_only_test.py
+
+Working commands:
+python3 src/hardware/stepper_only_test.py --motor 1 --duration-s 20 --delay-us 10000
+python3 src/hardware/stepper_only_test.py --motor 3 --duration-s 20 --delay-us 10000
+python3 src/hardware/stepper_only_test.py --motor 5 --duration-s 20 --delay-us 10000
+
+Do not test motors 2, 4, and 6 until P3 wiring is isolated.
