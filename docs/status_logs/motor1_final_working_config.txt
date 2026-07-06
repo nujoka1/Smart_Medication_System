@@ -1,0 +1,21 @@
+Motor 1 Final Working Configuration
+
+Date: 2026-07-02
+
+Motor: 1
+Expander: 0x27
+Drive mode: Full-step two-phase
+Safe OFF byte: 0x00
+Logic: HIGH = ON, LOW = OFF
+Confirmed coil order: P0, P2, P1, P4
+Sequence:
+P0 + P2
+P2 + P1
+P1 + P4
+P4 + P0
+
+Best stable speed so far:
+delay-us = 10000
+
+Working test command:
+python3 src/hardware/test_motor1_two_led_fullstep.py --duration-s 60 --delay-us 10000
