@@ -32,3 +32,5 @@ pigpio-master/
 .DS_Store
 .vscode/
 .idea/
+data/evidence/
+*.pyc
