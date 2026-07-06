@@ -1036,6 +1036,80 @@ def evidence_file(evidence_id, filename):
     return send_file(file_path)
 
 
+
+
+# ============================================================
+# STEPPER HARDWARE TEST API
+# Confirmed working motors: 1, 3, 5 only.
+# Motors 2, 4, 6 remain disabled until P3 wiring is isolated.
+# ============================================================
+
+@app.route('/api/hardware/steppers', methods=['GET'])
+def api_hardware_steppers():
+    from flask import jsonify
+    from src.hardware.stepper_control import list_steppers
+
+    return jsonify(list_steppers())
+
+
+@app.route('/api/hardware/stepper-off', methods=['POST'])
+def api_hardware_stepper_off():
+    from flask import jsonify
+    from src.hardware.stepper_control import StepperController
+
+    d = StepperController()
+    try:
+        d.all_off()
+        return jsonify({
+            "success": True,
+            "message": "All stepper coil outputs set OFF",
+            "safe_off": "0x00"
+        })
+    finally:
+        d.close()
+
+
+@app.route('/api/hardware/stepper-test', methods=['POST'])
+def api_hardware_stepper_test():
+    from flask import jsonify, request
+    from src.hardware.stepper_control import StepperController
+
+    data = request.get_json(silent=True) or {}
+
+    motor = int(data.get("motor", 1))
+    duration_s = float(data.get("duration_s", 3))
+    delay_us = int(data.get("delay_us", 10000))
+    start_us = int(data.get("start_us", 35000))
+    reverse = bool(data.get("reverse", False))
+
+    d = StepperController()
+
+    try:
+        result = d.rotate_for_duration(
+            motor=motor,
+            duration_s=duration_s,
+            delay_us=delay_us,
+            start_us=start_us,
+            reverse=reverse,
+        )
+        return jsonify(result)
+
+    except Exception as e:
+        try:
+            d.all_off()
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "note": "Only motors 1, 3, and 5 are currently enabled."
+        }), 400
+
+    finally:
+        d.close()
+
+
 if __name__ == '__main__': start_api()
 
 @app.route('/api/patient', methods=['POST'])
