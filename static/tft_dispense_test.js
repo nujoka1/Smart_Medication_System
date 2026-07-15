@@ -174,7 +174,7 @@ function buildDispenseScreen() {
     div.innerHTML = `
         <div id="dispense-test" class="screen">
             <div class="header">
-                <div class="title">DISPENSE TEST</div>
+                <div class="title">DISPENSE + EVID.</div>
                 <div class="time"></div>
             </div>
 
@@ -183,7 +183,7 @@ function buildDispenseScreen() {
                 <div class="dispense-card">
                     <div class="dispense-title">Test Settings</div>
                     <div class="dispense-sub">
-                        Motor rotates until the matching IR sensor counts the selected quantity.
+                        Motor dispenses, IR count is recorded, then camera evidence is captured.
                     </div>
 
                     <div class="dispense-value">
@@ -272,8 +272,8 @@ function addDispenseButtonToSettings() {
     };
 
     btn.innerHTML = `
-        <div class="m-title">Dispense Test</div>
-        <div class="m-sub">Motor + IR count</div>
+        <div class="m-title">Dispense + Evidence</div>
+        <div class="m-sub">Motor, IR, camera</div>
     `;
 
     grid.appendChild(btn);
@@ -341,10 +341,16 @@ function setDispenseStatus(msg) {
 async function runDispenseTest(motor) {
     updateDispenseUI();
 
-    setDispenseStatus(`Running Motor ${motor}, Qty ${dispenseQty}, ${dispenseDelayUs} us...`);
+    const compartmentMap = {1: 1, 3: 3, 5: 5};
+    const compartment = compartmentMap[motor] || motor;
+
+    setDispenseStatus(
+        `Running Motor ${motor}, Qty ${dispenseQty}, ${dispenseDelayUs} us...`
+    );
 
     try {
-        const res = await fetch("/api/hardware/dispense-test", {
+        // 1. Run motor + IR dispense test
+        const dispenseRes = await fetch("/api/hardware/dispense-test", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
@@ -356,22 +362,53 @@ async function runDispenseTest(motor) {
             })
         });
 
-        const data = await res.json();
+        const dispenseData = await dispenseRes.json();
 
-        if (data.success) {
+        const actualCount = Number(dispenseData.actual_count || 0);
+        const targetCount = Number(dispenseData.target_count || dispenseQty);
+        const dispenseReason = dispenseData.reason || "UNKNOWN";
+
+        setDispenseStatus(
+            `Dispense finished: ${dispenseReason}. Count ${actualCount}/${targetCount}. Capturing evidence...`
+        );
+
+        // 2. Capture camera evidence whether count passed or failed.
+        // For now this is intentional because IR tape/alignment may still be under adjustment.
+        const evidenceRes = await fetch("/api/evidence/capture", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                expected_name: "TFT Test Medication",
+                expected_ai_class: "custom",
+                verification_mode: "count_camera_only",
+                dose_time: "TFT Manual",
+                dose_period: `TFT Motor ${motor} dispense test`,
+                dose_quantity: targetCount,
+                compartment: compartment,
+                ir_target_count: targetCount,
+                ir_actual_count: actualCount
+            })
+        });
+
+        const evidenceData = await evidenceRes.json();
+
+        if (evidenceData.success) {
+            const decision = evidenceData.decision || "UNKNOWN";
+            const eid = evidenceData.evidence_id || "saved";
+
             setDispenseStatus(
-                `OK: Motor ${data.motor} count ${data.actual_count}/${data.target_count}. ` +
-                `Reason: ${data.reason}. Steps: ${data.steps_executed}.`
+                `Evidence saved. Dispense: ${dispenseReason}. ` +
+                `Count ${actualCount}/${targetCount}. Decision: ${decision}. ID: ${eid}.`
             );
         } else {
             setDispenseStatus(
-                `FAILED: ${data.error || data.reason || "Count not reached"}. ` +
-                `Count: ${data.actual_count || 0}/${data.target_count || dispenseQty}.`
+                `Dispense: ${dispenseReason}. Count ${actualCount}/${targetCount}. ` +
+                `Evidence failed: ${evidenceData.error || "camera/evidence error"}.`
             );
         }
 
     } catch (e) {
-        setDispenseStatus("ERROR: Dispense API not reachable.");
+        setDispenseStatus("ERROR: Dispense/evidence API not reachable.");
     }
 }
 
