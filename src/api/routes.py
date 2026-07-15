@@ -1110,6 +1110,65 @@ def api_hardware_stepper_test():
         d.close()
 
 
+
+
+# ============================================================
+# 3-MOTOR DISPENSE TEST API
+# Enabled motors: 1, 3, 5 only.
+# Motors 2, 4, 6 remain disabled until P3 wiring is isolated.
+# ============================================================
+
+@app.route('/api/hardware/dispense-paths', methods=['GET'])
+def api_hardware_dispense_paths():
+    from flask import jsonify
+    from src.hardware.dispense_control import list_dispense_paths
+
+    return jsonify(list_dispense_paths())
+
+
+@app.route('/api/hardware/dispense-test', methods=['POST'])
+def api_hardware_dispense_test():
+    from flask import jsonify, request
+    from src.hardware.dispense_control import DispenseController
+
+    data = request.get_json(silent=True) or {}
+
+    motor = int(data.get("motor", 1))
+    target_count = int(data.get("target_count", data.get("qty", 1)))
+    delay_us = int(data.get("delay_us", 10000))
+    start_us = int(data.get("start_us", 35000))
+    timeout_s = float(data.get("timeout_s", 30))
+    reverse = bool(data.get("reverse", False))
+
+    d = DispenseController()
+
+    try:
+        result = d.dispense_until_count(
+            motor=motor,
+            target_count=target_count,
+            delay_us=delay_us,
+            start_us=start_us,
+            timeout_s=timeout_s,
+            reverse=reverse,
+        )
+        return jsonify(result)
+
+    except Exception as e:
+        try:
+            d.all_steppers_off()
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "note": "Only motors 1, 3, and 5 are enabled for dispense testing."
+        }), 400
+
+    finally:
+        d.close()
+
+
 if __name__ == '__main__': start_api()
 
 @app.route('/api/patient', methods=['POST'])
