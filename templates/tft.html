@@ -564,7 +564,7 @@ button {
     <div class="center">
         <div>
             <div class="big" id="msgText">Message</div>
-            <div class="sub">This screen is ready for backend connection.</div>
+            <div class="sub" id="msgSub">System result will appear here.</div>
         </div>
     </div>
 
@@ -584,8 +584,14 @@ function showScreen(id) {
     document.getElementById(id).classList.add('active');
 }
 
-function showMessage(msg) {
+function showMessage(msg, sub) {
     document.getElementById('msgText').textContent = msg;
+
+    const msgSub = document.getElementById('msgSub');
+    if (msgSub) {
+        msgSub.textContent = sub || "MedSystem result displayed.";
+    }
+
     showScreen('message');
 }
 
@@ -852,6 +858,7 @@ async function saveScheduleFromTFT() {
 <script src="/static/tft_evidence_final.js?v=1"></script>
 <script src="/static/tft_stepper_test.js?v=3"></script>
 <script src="/static/tft_dispense_test.js?v=2"></script>
+<script src="/static/tft_schedule_dispense_now.js?v=1"></script>
 <script src="/static/tft_settings_scroll_and_stepper_fix.js?v=3"></script>
 </body>
 </html>
