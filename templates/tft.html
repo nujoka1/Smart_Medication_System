@@ -643,6 +643,49 @@ async function loadData() {
     }
 }
 
+function timeToMinutes(t) {
+    if (!t || typeof t !== "string" || !t.includes(":")) return null;
+
+    const parts = t.split(":");
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+
+    return (h * 60) + m;
+}
+
+function getNextScheduleDose(schedule) {
+    if (!schedule || schedule.length === 0) return null;
+
+    const now = new Date();
+    const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+
+    const valid = schedule
+        .map(s => {
+            const mins = timeToMinutes(s.time);
+            if (mins === null) return null;
+
+            return {
+                ...s,
+                __minutes: mins,
+                __dayOffset: mins >= nowMinutes ? 0 : 1
+            };
+        })
+        .filter(Boolean);
+
+    if (!valid.length) return null;
+
+    valid.sort((a, b) => {
+        if (a.__dayOffset !== b.__dayOffset) {
+            return a.__dayOffset - b.__dayOffset;
+        }
+        return a.__minutes - b.__minutes;
+    });
+
+    return valid[0];
+}
+
 function renderHome(schedule, meds) {
     if (!schedule || schedule.length === 0) {
         document.getElementById('homeMed').textContent = "No dose scheduled";
@@ -654,15 +697,31 @@ function renderHome(schedule, meds) {
         return;
     }
 
-    const next = schedule[0];
+    const next = getNextScheduleDose(schedule);
+
+    if (!next) {
+        document.getElementById('homeMed').textContent = "No valid schedule";
+        document.getElementById('homeInfo').textContent = "Check alarm time format";
+        document.getElementById('homeQty').textContent = "--";
+        document.getElementById('homeStock').textContent = "--";
+        document.getElementById('homeDue').textContent = "--";
+        currentDose = null;
+        return;
+    }
+
     const medInfo = meds.find(m => m.name === next.med) || {};
     currentDose = { ...next, stock: medInfo.stock ?? "--" };
 
+    const dueLabel = next.__dayOffset === 0
+        ? (next.time || "--")
+        : `Tomorrow ${next.time || "--"}`;
+
     document.getElementById('homeMed').textContent = next.med || "Medication";
-    document.getElementById('homeInfo').textContent = `${next.patient || 'Patient'} | Compartment ${next.compartment ?? '-'}`;
+    document.getElementById('homeInfo').textContent =
+        `${next.patient || 'Patient'} | Compartment ${next.compartment ?? '-'}`;
     document.getElementById('homeQty').textContent = next.qty ?? "--";
     document.getElementById('homeStock').textContent = currentDose.stock;
-    document.getElementById('homeDue').textContent = next.time || "--";
+    document.getElementById('homeDue').textContent = dueLabel;
 
     document.getElementById('duePatient').textContent = next.patient || "Patient";
     document.getElementById('dueMed').textContent = next.med || "Medication";
@@ -672,6 +731,7 @@ function renderHome(schedule, meds) {
 
 function renderSchedule(schedule, meds) {
     const box = document.getElementById('scheduleList');
+
     if (!schedule || schedule.length === 0) {
         box.innerHTML = '<div class="item"><div class="item-main">No schedule today</div><div class="item-sub">Add alarm from TFT or dashboard</div></div>';
         return;
@@ -687,6 +747,7 @@ function renderSchedule(schedule, meds) {
 
 function renderStock(meds) {
     const box = document.getElementById('stockList');
+
     if (!meds || meds.length === 0) {
         box.innerHTML = '<div class="item"><div class="item-main">No medication saved</div><div class="item-sub">Add medications from dashboard</div></div>';
         return;
@@ -717,6 +778,10 @@ function renderLogs(logs) {
 
 function checkDue() {
     if (!currentDose || !currentDose.time) return;
+
+    // Do not trigger today's due screen for a dose we are only displaying as tomorrow's next dose.
+    if (currentDose.__dayOffset && currentDose.__dayOffset > 0) return;
+
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
