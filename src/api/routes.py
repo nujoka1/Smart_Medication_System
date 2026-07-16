@@ -1169,6 +1169,232 @@ def api_hardware_dispense_test():
         d.close()
 
 
+
+
+# ============================================================
+# SCHEDULED DISPENSE-NOW API
+# Loads a schedule, dispenses using the assigned compartment,
+# captures evidence, updates stock, and writes dispense_logs.
+# Enabled hardware paths: compartment 1/3/5 only.
+# Legacy compartment 0 maps to Motor 1.
+# ============================================================
+
+def _schedule_compartment_to_motor(compartment):
+    try:
+        comp = int(compartment)
+    except Exception:
+        return None
+
+    # Legacy DB used 0 for first compartment. Current working motors are 1, 3, 5.
+    mapping = {
+        0: 1,
+        1: 1,
+        3: 3,
+        5: 5,
+    }
+    return mapping.get(comp)
+
+
+def _dispense_outcome_from_decision(decision, dispense_success):
+    if not dispense_success:
+        return "missed"
+
+    if decision == "VERIFIED_AI":
+        return "success"
+
+    if decision == "CUSTOM_COUNT_CAMERA":
+        return "custom_named"
+
+    if decision == "AI_MISMATCH_WARNING":
+        return "wrong_pill"
+
+    if decision == "COUNT_ERROR":
+        return "missed"
+
+    return "error"
+
+
+@app.route('/api/schedule/<int:sid>/dispense-now', methods=['POST'])
+def api_schedule_dispense_now(sid):
+    """
+    Execute one scheduled dispense immediately.
+
+    Flow:
+    1. Load schedule and medication
+    2. Map medication compartment to working motor
+    3. Run motor + IR dispense
+    4. Capture evidence
+    5. Save dispense log
+    6. Reduce stock only when dispense count succeeds
+    """
+    import json
+    from src.hardware.dispense_control import DispenseController
+
+    d = request.get_json(silent=True) or {}
+
+    delay_us = int(d.get("delay_us", 10000))
+    start_us = int(d.get("start_us", 35000))
+    timeout_s = float(d.get("timeout_s", 30))
+    reverse = bool(d.get("reverse", False))
+
+    # For development, capture evidence even if IR count fails.
+    # Later set to false if you want clean production records only.
+    capture_on_failure = bool(d.get("capture_on_failure", True))
+
+    with get_session(get_engine()) as s:
+        sch = s.get(Schedule, sid)
+        if not sch:
+            return jsonify(dict(success=False, error="Schedule not found")), 404
+
+        if not sch.active and not bool(d.get("force", False)):
+            return jsonify(dict(
+                success=False,
+                error="Schedule is inactive. Send force=true to test it manually."
+            )), 400
+
+        patient = sch.patient
+        med = sch.medication
+
+        if not patient:
+            return jsonify(dict(success=False, error="Schedule has no patient")), 400
+
+        if not med:
+            return jsonify(dict(success=False, error="Schedule has no medication")), 400
+
+        motor = _schedule_compartment_to_motor(med.compartment)
+
+        if motor not in [1, 3, 5]:
+            return jsonify(dict(
+                success=False,
+                error="Assigned compartment is not enabled for dispensing yet",
+                compartment=med.compartment,
+                enabled_compartments=[1, 3, 5],
+                note="Motors 2, 4, and 6 remain disabled until P3 wiring is isolated."
+            )), 400
+
+        target_count = int(sch.dose_quantity or 1)
+
+        dispenser = DispenseController()
+
+        try:
+            dispense_result = dispenser.dispense_until_count(
+                motor=motor,
+                target_count=target_count,
+                delay_us=delay_us,
+                start_us=start_us,
+                timeout_s=timeout_s,
+                reverse=reverse,
+            )
+        finally:
+            dispenser.close()
+
+        actual_count = int(dispense_result.get("actual_count") or 0)
+        dispense_success = bool(dispense_result.get("success"))
+
+        evidence_result = None
+
+        if dispense_success or capture_on_failure:
+            expected_ai_class = med.ai_class_name or "custom"
+
+            evidence_payload = {
+                "patient_id": patient.id,
+                "schedule_id": sch.id,
+                "medication_id": med.id,
+                "expected_name": med.name,
+                "expected_ai_class": expected_ai_class,
+                "verification_mode": "count_camera_only" if expected_ai_class == "custom" else "ai_camera_count",
+                "dose_time": sch.dose_time,
+                "dose_quantity": target_count,
+                "compartment": med.compartment,
+                "ir_target_count": target_count,
+                "ir_actual_count": actual_count,
+            }
+
+            # Internal Flask dispatch avoids self-calling the server over HTTP.
+            with app.test_client() as client:
+                resp = client.post("/api/evidence/capture", json=evidence_payload)
+                evidence_result = resp.get_json(silent=True) or {
+                    "success": False,
+                    "decision": "CAMERA_ERROR",
+                    "error": resp.get_data(as_text=True)[-500:]
+                }
+
+        decision = (evidence_result or {}).get("decision", "NO_EVIDENCE")
+        model_result = (evidence_result or {}).get("model_result") or {}
+        detected_med = model_result.get("detected_class")
+        confidence = model_result.get("confidence")
+
+        outcome = _dispense_outcome_from_decision(decision, dispense_success)
+
+        # Reduce stock only if actual dispense count succeeded.
+        stock_before = med.stock_count or 0
+        stock_after = stock_before
+
+        if dispense_success:
+            stock_after = max(0, int(stock_before) - actual_count)
+            med.stock_count = stock_after
+
+        notes = {
+            "source": "schedule_dispense_now",
+            "motor": motor,
+            "compartment": med.compartment,
+            "dispense_result": dispense_result,
+            "evidence": {
+                "evidence_id": (evidence_result or {}).get("evidence_id"),
+                "decision": decision,
+                "raw_url": (evidence_result or {}).get("raw_url"),
+                "annotated_url": (evidence_result or {}).get("annotated_url"),
+            },
+            "stock_before": stock_before,
+            "stock_after": stock_after,
+        }
+
+        log = DispenseLog(
+            patient_id=patient.id,
+            schedule_id=sch.id,
+            expected_med=med.name,
+            detected_med=detected_med,
+            confidence=float(confidence) if confidence is not None else None,
+            weight_g=None,
+            outcome=outcome,
+            notes=json.dumps(notes)
+        )
+
+        s.add(log)
+        s.commit()
+
+        socketio.emit("dispense_completed", dict(
+            schedule_id=sch.id,
+            patient=patient.name,
+            medication=med.name,
+            outcome=outcome,
+            decision=decision,
+            count=f"{actual_count}/{target_count}"
+        ))
+
+        return jsonify(dict(
+            success=True,
+            schedule_id=sch.id,
+            patient=dict(id=patient.id, name=patient.name),
+            medication=dict(
+                id=med.id,
+                name=med.name,
+                ai_class=med.ai_class_name or "custom",
+                compartment=med.compartment,
+                stock_before=stock_before,
+                stock_after=stock_after,
+            ),
+            motor=motor,
+            target_count=target_count,
+            actual_count=actual_count,
+            dispense_success=dispense_success,
+            dispense_result=dispense_result,
+            evidence=evidence_result,
+            decision=decision,
+            outcome=outcome,
+            log_id=log.id
+        ))
+
 if __name__ == '__main__': start_api()
 
 @app.route('/api/patient', methods=['POST'])
