@@ -8,29 +8,30 @@ __pycache__/
 # Virtual environments
 venv/
 .env
-
 # Logs
 logs/*.log
 *.log
-
 # Runtime data
 data/captures/
 *.jpg
 *.jpeg
 *.png
-
 # SQLite runtime database
 data/*.db
 data/*.sqlite
 data/*.sqlite3
-
 # Archives / downloaded libraries
 master.zip
 pigpio-master/
-
 # OS/editor
 .DS_Store
 .vscode/
 .idea/
 data/evidence/
 *.pyc
+# Auto-dispense runtime state
+data/autodispense_status.json
+data/autodispense_done.json
+data/autodispense_ack.json
+# Local backup files
+*.before_*
