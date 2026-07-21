@@ -1395,6 +1395,65 @@ def api_schedule_dispense_now(sid):
             log_id=log.id
         ))
 
+
+
+# ============================================================
+# AUTO-DISPENSE STATUS / ACKNOWLEDGE API
+# Used by background auto-dispense service and TFT.
+# ============================================================
+
+@app.route('/api/autodispense/status', methods=['GET'])
+def api_autodispense_status():
+    import json
+    from pathlib import Path
+
+    status_path = Path("data/autodispense_status.json")
+
+    if not status_path.exists():
+        return jsonify(dict(
+            success=True,
+            state="idle",
+            alarm_active=False,
+            message="Auto-dispense service has not reported yet."
+        ))
+
+    try:
+        return jsonify(json.loads(status_path.read_text()))
+    except Exception as e:
+        return jsonify(dict(
+            success=False,
+            state="error",
+            alarm_active=False,
+            error=str(e)
+        )), 500
+
+
+@app.route('/api/autodispense/acknowledge', methods=['POST'])
+def api_autodispense_acknowledge():
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    ack_path = Path("data/autodispense_ack.json")
+    ack_path.parent.mkdir(parents=True, exist_ok=True)
+
+    ack_path.write_text(json.dumps({
+        "acknowledged": True,
+        "acknowledged_at": datetime.now().isoformat(),
+        "source": "tft"
+    }, indent=2))
+
+    try:
+        from src.hardware.buzzer_control import buzzer_off
+        buzzer_off()
+    except Exception:
+        pass
+
+    return jsonify(dict(
+        success=True,
+        message="Medication alarm acknowledged."
+    ))
+
 if __name__ == '__main__': start_api()
 
 @app.route('/api/patient', methods=['POST'])

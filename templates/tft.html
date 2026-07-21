@@ -506,33 +506,39 @@ button {
 <!-- DUE SCREEN -->
 <div id="due" class="screen">
     <div class="header">
-        <div class="title">MEDICATION DUE</div>
+        <div class="title">MEDICATION READY</div>
         <div class="time"></div>
     </div>
 
     <div class="card">
-        <div class="label">PATIENT</div>
-        <div class="big" id="duePatient">Demo Patient</div>
-        <div class="sub" id="dueMed">Medication</div>
+        <div class="label">STATUS</div>
+        <div class="big" id="duePatient">Medication Ready</div>
+        <div class="sub" id="dueMed">Dispensed medication will appear here</div>
     </div>
 
     <div class="row">
         <div class="stat">
             <div class="value" id="dueQty">--</div>
-            <div class="name">Required</div>
+            <div class="name">Count</div>
         </div>
         <div class="stat">
             <div class="value" id="dueStock">--</div>
-            <div class="name">Available</div>
+            <div class="name">Stock</div>
+        </div>
+    </div>
+
+    <div class="card" style="height:72px;">
+        <div class="label">ALARM STATUS</div>
+        <div class="sub" id="dueStatus">
+            Alarm will sound after automatic dispensing is complete.
         </div>
     </div>
 
     <div class="bottom">
-        <button class="btn-amber" onclick="showScreen('home')">Acknowledge</button>
-        <button class="btn-green" onclick="showMessage('Auto-dispense will be connected after hardware layer.')">Ready</button>
+        <button class="btn-green" onclick="acknowledgeMedicationReady()">Acknowledge</button>
+        <button class="btn-dark" onclick="showScreen('home')">Home</button>
     </div>
 </div>
-
 <!-- DISPENSING -->
 <div id="dispensing" class="screen">
     <div class="header">
@@ -593,6 +599,16 @@ function showMessage(msg, sub) {
     }
 
     showScreen('message');
+}
+
+function acknowledgeMedicationReady() {
+    const status = document.getElementById('dueStatus');
+    if (status) {
+        status.textContent = "Acknowledged. Returning to home screen.";
+    }
+
+    // Buzzer stop will be connected here after buzzer API/service is added.
+    showScreen('home');
 }
 
 function updateClock() {
@@ -777,19 +793,9 @@ function renderLogs(logs) {
 }
 
 function checkDue() {
-    if (!currentDose || !currentDose.time) return;
-
-    // Do not trigger today's due screen for a dose we are only displaying as tomorrow's next dose.
-    if (currentDose.__dayOffset && currentDose.__dayOffset > 0) return;
-
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const nowTime = `${hh}:${mm}`;
-
-    if (nowTime === currentDose.time) {
-        showScreen('due');
-    }
+    // Automatic dispensing is handled by medsystem-autodispense.service.
+    // TFT display updates are handled by tft_auto_dispense_status.js.
+    return;
 }
 
 setInterval(updateClock, 1000);
@@ -924,6 +930,7 @@ async function saveScheduleFromTFT() {
 <script src="/static/tft_stepper_test.js?v=3"></script>
 <script src="/static/tft_dispense_test.js?v=2"></script>
 <script src="/static/tft_schedule_dispense_now.js?v=1"></script>
+<script src="/static/tft_auto_dispense_status.js?v=1"></script>
 <script src="/static/tft_settings_scroll_and_stepper_fix.js?v=3"></script>
 </body>
 </html>

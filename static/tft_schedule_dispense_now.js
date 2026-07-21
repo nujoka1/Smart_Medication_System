@@ -13,9 +13,9 @@ let tftSelectedScheduleForDispense = null;
 
 (function initScheduleDispenseNow() {
     injectScheduleDispenseCSS();
-    patchDueReadyButton();
+    // Due screen is now automatic-status only.
+    // Manual dispense remains available only from schedule detail for engineering tests.
     patchScheduleDetailOpen();
-    setInterval(patchDueReadyButton, 3000);
     setInterval(ensureScheduleDispenseControls, 3000);
 })();
 
@@ -78,18 +78,8 @@ function injectScheduleDispenseCSS() {
 }
 
 function patchDueReadyButton() {
-    const due = document.getElementById("due");
-    if (!due) return;
-
-    const buttons = due.querySelectorAll(".bottom button");
-    if (!buttons || buttons.length < 2) return;
-
-    const readyBtn = buttons[1];
-    readyBtn.textContent = "Dispense";
-    readyBtn.className = "btn-green";
-    readyBtn.onclick = function () {
-        dispenseCurrentDueDose();
-    };
+    // Deprecated: due-time dispense must be automatic, not button-triggered.
+    // Kept as a no-op for compatibility.
 }
 
 function patchScheduleDetailOpen() {
