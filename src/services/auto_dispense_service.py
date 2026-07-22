@@ -185,19 +185,33 @@ def process_due_batch(due_batch, current_time):
         sid = item.get("id")
         med = item.get("med") or "Medication"
         patient = item.get("patient") or "Patient"
+        qty = item.get("qty") or item.get("dose_quantity") or 1
+        compartment = item.get("compartment", item.get("comp"))
 
-        mark_status({
-            "state": "dispensing",
-            "alarm_active": False,
-            "message": f"Dispensing {index}/{total}: {med}",
+        base_status = {
             "due_time": current_time,
             "current_index": index,
             "total": total,
             "current_medication": med,
+            "medication": med,
             "patient": patient,
             "schedule_id": sid,
+            "current_qty": qty,
+            "dose_quantity": qty,
+            "current_compartment": compartment,
+            "compartment": compartment,
+            "current_schedule": item,
             "batch": due_batch,
             "results": results,
+        }
+
+        mark_status({
+            **base_status,
+            "state": "dispensing",
+            "stage": "dispensing",
+            "stage_started_at": datetime.now().isoformat(),
+            "alarm_active": False,
+            "message": f"Dispensing {index}/{total}: {med}"
         })
 
         log(f"Dispensing schedule {sid}: {med}")
@@ -213,22 +227,80 @@ def process_due_batch(due_batch, current_time):
         )
 
         results.append(result)
-        time.sleep(1)
+
+        evidence = {}
+        if isinstance(result, dict):
+            evidence = result.get("evidence") or {}
+
+        count_result = {
+            "actual_count": result.get("actual_count") if isinstance(result, dict) else None,
+            "target_count": result.get("target_count") if isinstance(result, dict) else qty,
+            "decision": result.get("decision") if isinstance(result, dict) else None,
+            "dispense_success": result.get("dispense_success") if isinstance(result, dict) else None,
+            "outcome": result.get("outcome") if isinstance(result, dict) else None
+        }
+
+        mark_status({
+            **base_status,
+            "state": "counting",
+            "stage": "counting",
+            "stage_started_at": datetime.now().isoformat(),
+            "alarm_active": False,
+            "message": f"Counting and verifying {med}",
+            "results": results,
+            "last_result": result,
+            "count_result": count_result
+        })
+
+        time.sleep(0.8)
+
+        mark_status({
+            **base_status,
+            "state": "evidence",
+            "stage": "evidence",
+            "stage_started_at": datetime.now().isoformat(),
+            "alarm_active": False,
+            "message": f"Evidence saved for {med}" if evidence else f"Verification completed for {med}",
+            "results": results,
+            "last_result": result,
+            "last_evidence": evidence,
+            "evidence_url": evidence.get("annotated_url") or evidence.get("raw_url")
+        })
+
+        time.sleep(0.8)
+
+    last_item = due_batch[-1] if due_batch else {}
+    last_result = results[-1] if results else {}
+    last_evidence = {}
+
+    if isinstance(last_result, dict):
+        last_evidence = last_result.get("evidence") or {}
 
     mark_status({
         "state": "ready",
+        "stage": "ready",
+        "stage_started_at": datetime.now().isoformat(),
         "alarm_active": True,
         "message": "Medication ready. Please take your medication.",
         "due_time": current_time,
         "total": total,
         "batch": due_batch,
         "results": results,
+        "last_result": last_result,
+        "last_evidence": last_evidence,
+        "evidence_url": last_evidence.get("annotated_url") or last_evidence.get("raw_url"),
+        "current_medication": last_item.get("med"),
+        "medication": last_item.get("med"),
+        "patient": last_item.get("patient"),
+        "current_qty": last_item.get("qty"),
+        "dose_quantity": last_item.get("qty"),
+        "current_compartment": last_item.get("compartment", last_item.get("comp")),
+        "compartment": last_item.get("compartment", last_item.get("comp")),
         "ready_at": datetime.now().isoformat()
     })
 
     log(f"Batch complete for {current_time}. Alarm active.")
     alarm_loop_until_ack()
-
 
 def main():
     log("Auto-dispense service started.")

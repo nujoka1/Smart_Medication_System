@@ -35,3 +35,21 @@ data/autodispense_done.json
 data/autodispense_ack.json
 # Local backup files
 *.before_*
+
+# Runtime / local files
+venv/
+__pycache__/
+*.pyc
+data/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+*.before_*
+*.bak
+.env
+.env.*
+data/evidence/
+archive/
+pigpio-master/
+master.zip

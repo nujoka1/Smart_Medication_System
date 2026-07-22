@@ -48,6 +48,16 @@ def logs():
             outcome=r.outcome,
             notes=r.notes or '') for r in rows])
 
+
+@app.after_request
+def add_mobile_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    response.headers["Access-Control-Max-Age"] = "86400"
+    return response
+
+
 @app.route('/api/patients')
 def patients():
     with get_session(get_engine()) as s:
@@ -82,10 +92,30 @@ def schedule_today():
 def schedules():
     with get_session(get_engine()) as s:
         rows = s.query(Schedule).filter_by(active=True).order_by(Schedule.dose_time).all()
-        return jsonify([dict(
-            id=r.id, patient=r.patient.name, med=r.medication.name,
-            time=r.dose_time, qty=r.dose_quantity,
-            days=r.days_of_week, comp=r.medication.compartment) for r in rows])
+
+        data = []
+        skipped = 0
+
+        for r in rows:
+            if not r.patient or not r.medication:
+                skipped += 1
+                continue
+
+            data.append(dict(
+                id=r.id,
+                patient=r.patient.name,
+                patient_id=r.patient_id,
+                med=r.medication.name,
+                medication_id=r.medication_id,
+                time=r.dose_time,
+                qty=r.dose_quantity,
+                days=r.days_of_week,
+                comp=r.medication.compartment,
+                compartment=r.medication.compartment
+            ))
+
+        return jsonify(data)
+
 
 @app.route('/api/schedule', methods=['POST'])
 def create_schedule():
@@ -269,6 +299,95 @@ def update_medication_stock(mid):
             compartment=med.compartment
         ))
 
+
+
+
+@app.route('/api/medications/<int:mid>/reset-stock', methods=['POST'])
+def reset_medication_stock(mid):
+    d = request.get_json() or {}
+    reset_to = int(d.get('stock_count', 30))
+
+    if reset_to < 0:
+        return jsonify(dict(error='stock_count cannot be negative')), 400
+
+    with get_session(get_engine()) as s:
+        med = s.get(Medication, mid)
+        if not med:
+            return jsonify(dict(error='Medication not found')), 404
+
+        med.stock_count = reset_to
+        s.commit()
+
+        socketio.emit('stock_updated', dict(
+            medication_id=med.id,
+            name=med.name,
+            stock=med.stock_count,
+            action='reset'
+        ))
+
+        return jsonify(dict(
+            success=True,
+            id=med.id,
+            name=med.name,
+            compartment=med.compartment,
+            stock=med.stock_count
+        ))
+
+
+@app.route('/api/medications/<int:mid>', methods=['DELETE'])
+def delete_medication(mid):
+    with get_session(get_engine()) as s:
+        med = s.get(Medication, mid)
+        if not med:
+            return jsonify(dict(error='Medication not found')), 404
+
+        name = med.name
+
+        # Delete logs first if the model/table supports medication_id or schedule_id.
+        deleted_logs = 0
+        deleted_schedules = 0
+
+        schedules_for_med = s.query(Schedule).filter_by(medication_id=mid).all()
+        schedule_ids = [sch.id for sch in schedules_for_med]
+
+        try:
+            logs_for_med = s.query(DispenseLog).filter_by(medication_id=mid).all()
+            for lg in logs_for_med:
+                s.delete(lg)
+                deleted_logs += 1
+        except Exception:
+            pass
+
+        try:
+            if schedule_ids:
+                logs_for_schedules = s.query(DispenseLog).filter(DispenseLog.schedule_id.in_(schedule_ids)).all()
+                for lg in logs_for_schedules:
+                    s.delete(lg)
+                    deleted_logs += 1
+        except Exception:
+            pass
+
+        for sch in schedules_for_med:
+            s.delete(sch)
+            deleted_schedules += 1
+
+        s.delete(med)
+        s.commit()
+
+        socketio.emit('medication_deleted', dict(
+            medication_id=mid,
+            name=name,
+            deleted_schedules=deleted_schedules,
+            deleted_logs=deleted_logs
+        ))
+
+        return jsonify(dict(
+            success=True,
+            id=mid,
+            name=name,
+            deleted_schedules=deleted_schedules,
+            deleted_logs=deleted_logs
+        ))
 
 
 

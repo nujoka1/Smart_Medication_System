@@ -63,7 +63,7 @@ function injectStockManageCSS() {
 
         .stock-control-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 6px;
             margin-top: 4px;
             margin-bottom: 52px;
@@ -136,11 +136,13 @@ function injectStockDetailScreen() {
                 <button class="btn-dark" onclick="adjustStockCount(-1)">−1</button>
                 <button class="btn-purple" onclick="adjustStockCount(10)">+10</button>
                 <button class="btn-green" onclick="adjustStockCount(30)">+30</button>
+                <button class="btn-purple" onclick="resetStockCount()">Reset</button>
             </div>
 
-            <div class="bottom three compact-bottom">
+            <div class="bottom compact-bottom" style="grid-template-columns: repeat(4, 1fr); gap:5px;">
                 <button class="btn-dark" onclick="showScreen('stock')">Back</button>
                 <button class="btn-red" onclick="setStockZero()">Set 0</button>
+                <button class="btn-red" onclick="deleteSelectedMedication()">Delete</button>
                 <button class="btn-green" onclick="saveStockCount()">Save</button>
             </div>
         </div>
@@ -222,6 +224,71 @@ function adjustStockCount(delta) {
 function setStockZero() {
     selectedStockCount = 0;
     document.getElementById("stockDetailCount").textContent = selectedStockCount;
+}
+
+async function resetStockCount() {
+    if (!selectedStockMedication || !selectedStockMedication.id) {
+        showMessage("No medication selected.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/medications/${selectedStockMedication.id}/reset-stock`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({stock_count: 30})
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            showMessage(data.error || "Could not reset stock.");
+            return;
+        }
+
+        selectedStockCount = Number(data.stock ?? 30);
+        document.getElementById("stockDetailCount").textContent = selectedStockCount;
+
+        await loadData();
+        showMessage(`Stock reset: ${data.name} = ${data.stock}`);
+
+    } catch (e) {
+        showMessage("API error while resetting stock.");
+    }
+}
+
+async function deleteSelectedMedication() {
+    if (!selectedStockMedication || !selectedStockMedication.id) {
+        showMessage("No medication selected.");
+        return;
+    }
+
+    const name = selectedStockMedication.name || "Medication";
+    const ok = confirm(`Delete ${name}? This will also remove/disable linked alarms.`);
+    if (!ok) return;
+
+    try {
+        const res = await fetch(`/api/medications/${selectedStockMedication.id}`, {
+            method: "DELETE"
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            showMessage(data.error || "Could not delete medication.");
+            return;
+        }
+
+        selectedStockMedication = null;
+        selectedStockCount = 0;
+
+        await loadData();
+        showScreen("stock");
+        showMessage(`${data.name || name} deleted.`);
+
+    } catch (e) {
+        showMessage("API error while deleting medication.");
+    }
 }
 
 async function saveStockCount() {
