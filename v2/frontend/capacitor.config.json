@@ -1,6 +1,6 @@
 {
-  "appId": "com.medsystem.v2",
-  "appName": "MedSystem V2",
+  "appId": "com.nujoka.medsystem",
+  "appName": "MedSystem",
   "webDir": "dist",
   "server": {
     "androidScheme": "http",
