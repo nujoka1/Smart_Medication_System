@@ -1,0 +1,9 @@
+{
+  "appId": "com.medsystem.v2",
+  "appName": "MedSystem V2",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}
