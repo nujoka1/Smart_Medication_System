@@ -4,7 +4,9 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/patch-patient-medication-flow.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/patch-patient-medication-flow.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "cap:sync": "npx cap sync android",
