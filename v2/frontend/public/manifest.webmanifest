@@ -1,0 +1,12 @@
+{
+  "name": "MedSystem Smart Medication Companion",
+  "short_name": "MedSystem",
+  "description": "Smart medication dispensing, verification and adherence companion.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F7F5",
+  "theme_color": "#314A5E",
+  "icons": [
+    {"src":"/brand/medsystem-app-icon.png","sizes":"128x128","type":"image/png","purpose":"any maskable"}
+  ]
+}
