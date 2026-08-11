@@ -1,50 +1,6 @@
 const DEFAULT_SERVER = localStorage.getItem('medsystem_v2_server') || 'http://100.104.244.64:8080';
-
-export function getServer() {
-  return localStorage.getItem('medsystem_v2_server') || DEFAULT_SERVER;
-}
-
-export function setServer(value) {
-  const clean = String(value || '').trim().replace(/\/$/, '');
-  localStorage.setItem('medsystem_v2_server', clean);
-  return clean;
-}
-
-async function request(path, options = {}) {
-  const base = getServer().replace(/\/$/, '');
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(base + path, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-      }
-    });
-    let data = null;
-    try { data = await res.json(); } catch { data = null; }
-    if (!res.ok) {
-      const message = data?.error?.message || data?.error || `${res.status} ${res.statusText}`;
-      throw new Error(message);
-    }
-    return data;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-export const api = {
-  get: (path) => request(path),
-  post: (path, body = {}) => request(path, { method: 'POST', body: JSON.stringify(body) }),
-  del: (path) => request(path, { method: 'DELETE' }),
-  base: () => getServer()
-};
-
-export function resolveAsset(path) {
-  if (!path) return '';
-  const value = String(path);
-  if (/^https?:\/\//i.test(value) || value.startsWith('data:')) return value;
-  return getServer().replace(/\/$/, '') + '/' + value.replace(/^\/+/, '');
-}
+export function getServer(){return localStorage.getItem('medsystem_v2_server')||DEFAULT_SERVER}
+export function setServer(value){const clean=String(value||'').trim().replace(/\/$/,'');localStorage.setItem('medsystem_v2_server',clean);return clean}
+async function request(path,options={}){const base=getServer().replace(/\/$/,'');const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),8000);try{const res=await fetch(base+path,{...options,signal:controller.signal,headers:{'Content-Type':'application/json',...(options.headers||{})}});let data=null;try{data=await res.json()}catch{}if(!res.ok){const message=data?.error?.message||data?.error||`${res.status} ${res.statusText}`;throw new Error(message)}return data}finally{clearTimeout(timeout)}}
+export const api={get:p=>request(p),post:(p,b={})=>request(p,{method:'POST',body:JSON.stringify(b)}),patch:(p,b={})=>request(p,{method:'PATCH',body:JSON.stringify(b)}),put:(p,b={})=>request(p,{method:'PUT',body:JSON.stringify(b)}),del:p=>request(p,{method:'DELETE'}),base:()=>getServer()};
+export function resolveAsset(path){if(!path)return'';const value=String(path);if(/^https?:\/\//i.test(value)||value.startsWith('data:'))return value;return getServer().replace(/\/$/,'')+'/'+value.replace(/^\/+/, '')}
