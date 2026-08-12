@@ -1,25 +1,112 @@
-# MedSystem V2
+# MedSystem V2 Frontend
 
-Production-oriented responsive web/mobile frontend for the Smart Medication Dispenser.
+MedSystem V2 is the responsive user interface for the Smart Medication Dispenser. The same React/Vite codebase powers the browser dashboard and the Android companion application through Capacitor.
 
-## Scope
-- Reuses the current Raspberry Pi API on port 8080 during migration.
-- Does not modify the existing TFT or dispenser control stack.
-- Hardware Revision 1 exposes dispensing channels 1, 3 and 5.
-- RFID patient identification is presented as **Coming Soon — Hardware Revision 2**.
+## Main Areas
 
-## Run on Raspberry Pi
+- Login
+- Dashboard
+- Patients
+- Medication
+- Schedule
+- Adherence
+- Evidence
+- Caregiver
+- System
+- Settings
+
+## Medication Scheduling
+
+The schedule workflow mirrors the main dispenser TFT experience instead of exposing database-oriented fields directly.
+
+A user chooses:
+
+1. Patient
+2. Medication source
+   - AI-supported medication
+   - Registered medication
+   - Medication not listed
+3. Dose time
+4. Quantity
+5. Repeat days
+6. Save
+
+For custom medication, AI classification is skipped while pill counting and camera evidence remain available.
+
+## Development
 
 ```bash
-cd ~/Smart_Medication_System/v2/frontend
+cd v2/frontend
 npm install
-npm run build
-npm run dev -- --host 0.0.0.0 --port 5177
+npm run dev
 ```
 
-Open `http://<pi-address>:5177`.
+Build the production web bundle:
 
-## Architecture
-- One responsive frontend for browser and future Capacitor Android build.
-- Feature areas: Dashboard, Medications, Schedule, Adherence, Evidence, Caregiver, Device, Settings.
-- Current backend remains authoritative while `/api/v2` endpoints are introduced incrementally.
+```bash
+npm run build
+```
+
+The production output is generated in:
+
+```text
+dist/
+```
+
+## Android
+
+Requirements:
+
+- Node.js
+- Android SDK
+- JDK 21
+
+Generate the Android platform once:
+
+```bash
+npx cap add android
+```
+
+Sync the latest web build:
+
+```bash
+npm run build
+npx cap sync android
+```
+
+Build the debug APK:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
+APK output:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Application ID:
+
+```text
+com.nujoka.medsystem
+```
+
+## GitHub APK Build
+
+The repository includes `.github/workflows/android-build.yml`. The workflow builds the frontend, generates the Capacitor Android project, compiles the debug APK with Java 21, and uploads the resulting APK as a GitHub Actions artifact named:
+
+```text
+MedSystem-Android-Debug
+```
+
+## Backend
+
+The V2 frontend currently communicates with the existing MedSystem device API. The backend remains authoritative for patients, medication, schedules, evidence, automatic dispensing, hardware state, and verification results.
+
+Engineering connection details belong in deployment/configuration workflows rather than the normal customer-facing interface.
+
+## Production Direction
+
+The current login is a prototype access gate. A production deployment should move authentication and authorization to the backend, use HTTPS, implement secure credential storage and role-based permissions, and undergo a full security review.
