@@ -4,52 +4,61 @@ __pycache__/
 *.pyo
 *.pyd
 *.egg-info/
+.pytest_cache/
 
-# Virtual environments
+# Virtual environments / secrets
 venv/
+.venv/
 .env
-# Logs
-logs/*.log
-*.log
-# Runtime data
-data/captures/
-*.jpg
-*.jpeg
-*.png
-# SQLite runtime database
-data/*.db
-data/*.sqlite
-data/*.sqlite3
-# Archives / downloaded libraries
-master.zip
-pigpio-master/
-# OS/editor
-.DS_Store
-.vscode/
-.idea/
-data/evidence/
-*.pyc
-# Auto-dispense runtime state
-data/autodispense_status.json
-data/autodispense_done.json
-data/autodispense_ack.json
-# Local backup files
-*.before_*
+.env.*
 
-# Runtime / local files
-venv/
-__pycache__/
-*.pyc
-data/
+# Runtime data
 logs/
+*.log
+data/
 *.db
 *.sqlite
 *.sqlite3
 *.before_*
 *.bak
-.env
-.env.*
+
+# Captures / generated evidence
+*.jpg
+*.jpeg
+*.png
+!v2/frontend/public/**/*.png
+!v2/frontend/resources/**/*.png
+
 data/evidence/
-archive/
-pigpio-master/
+data/captures/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Capacitor / Android generated files
+v2/frontend/android/.gradle/
+v2/frontend/android/build/
+v2/frontend/android/app/build/
+v2/frontend/android/local.properties
+v2/frontend/release/
+*.apk
+*.aab
+
+# Archives / downloaded libraries
 master.zip
+pigpio-master/
+archive/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Misc generated files
+*.pyc
