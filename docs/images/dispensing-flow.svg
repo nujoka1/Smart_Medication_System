@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
+  <rect width="1200" height="560" fill="white"/>
+  <style>.b{fill:white;stroke:#111;stroke-width:2;rx:16;ry:16}.t{font:700 22px Arial;fill:#111}.s{font:16px Arial;fill:#333}.l{stroke:#111;stroke-width:2;fill:none;marker-end:url(#a)}</style>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#111"/></marker></defs>
+  <text x="600" y="42" text-anchor="middle" class="t">MedSystem — Count-Driven Dispensing Sequence</text>
+
+  <rect class="b" x="55" y="120" width="180" height="90"/><text x="145" y="157" text-anchor="middle" class="t">Dose Due</text><text x="145" y="185" text-anchor="middle" class="s">Target count = N</text>
+  <rect class="b" x="285" y="120" width="180" height="90"/><text x="375" y="157" text-anchor="middle" class="t">Rotate</text><text x="375" y="185" text-anchor="middle" class="s">Stepper runs continuously</text>
+  <rect class="b" x="515" y="120" width="180" height="90"/><text x="605" y="157" text-anchor="middle" class="t">IR Detect</text><text x="605" y="185" text-anchor="middle" class="s">CLEAR → DETECT</text>
+  <rect class="b" x="745" y="120" width="180" height="90"/><text x="835" y="157" text-anchor="middle" class="t">Count + 1</text><text x="835" y="185" text-anchor="middle" class="s">Then wait for CLEAR</text>
+  <rect class="b" x="975" y="120" width="170" height="90"/><text x="1060" y="157" text-anchor="middle" class="t">Target?</text><text x="1060" y="185" text-anchor="middle" class="s">actual = N</text>
+
+  <path class="l" d="M235 165 H285"/><path class="l" d="M465 165 H515"/><path class="l" d="M695 165 H745"/><path class="l" d="M925 165 H975"/>
+
+  <rect class="b" x="720" y="345" width="240" height="95"/><text x="840" y="382" text-anchor="middle" class="t">Stop Motor</text><text x="840" y="412" text-anchor="middle" class="s">Safe-off immediately</text>
+  <rect class="b" x="420" y="345" width="240" height="95"/><text x="540" y="382" text-anchor="middle" class="t">Verify & Record</text><text x="540" y="412" text-anchor="middle" class="s">Camera • AI • evidence • stock</text>
+  <rect class="b" x="120" y="345" width="240" height="95"/><text x="240" y="382" text-anchor="middle" class="t">Medication Ready</text><text x="240" y="412" text-anchor="middle" class="s">Alert + acknowledgement</text>
+
+  <path class="l" d="M1060 210 V285 H840 V345"/>
+  <path class="l" d="M720 392 H660"/><path class="l" d="M420 392 H360"/>
+  <path class="l" d="M1060 210 V265 H375 V210"/>
+  <text x="1075" y="250" class="s">Yes</text>
+  <text x="665" y="252" class="s">No — continue rotating</text>
+  <text x="600" y="520" text-anchor="middle" class="s">A safety timeout can stop the mechanism if the requested pill count is never reached.</text>
+</svg>
